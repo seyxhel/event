@@ -230,6 +230,11 @@ export function RegistrationPage() {
         body: JSON.stringify(payload)
       });
 
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.toLowerCase().includes('application/json')) {
+        throw new Error('API endpoint returned a non-JSON response.');
+      }
+
       const data = await response.json();
       if (!response.ok) {
         if (data?.errors) {
@@ -249,7 +254,9 @@ export function RegistrationPage() {
         }
       });
     } catch (_error) {
-      setSubmitError('Unable to connect to server. Please try again.');
+      setSubmitError(
+        'Unable to reach the API. On Railway, set VITE_API_BASE_URL in the frontend service to your backend public URL and redeploy.'
+      );
     } finally {
       setIsSubmitting(false);
     }

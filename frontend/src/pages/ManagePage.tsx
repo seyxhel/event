@@ -100,6 +100,14 @@ export function ManagePage() {
           return;
         }
 
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.toLowerCase().includes('application/json')) {
+          setError(
+            'API is not reachable from this frontend. Set VITE_API_BASE_URL in Railway frontend variables to the backend public URL and redeploy.'
+          );
+          return;
+        }
+
         const data = await response.json();
         setRows(data.results || []);
         setPagination(
