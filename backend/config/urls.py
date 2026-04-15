@@ -17,9 +17,18 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.generic import TemplateView
+from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('registrations.urls')),
-    re_path(r'^(?!api/|admin/|static/|media/).*$', TemplateView.as_view(template_name='index.html'), name='frontend_spa'),
 ]
+
+if settings.SERVE_FRONTEND:
+    urlpatterns.append(
+        re_path(
+            r'^(?!api/|admin/|static/|media/).*$',
+            TemplateView.as_view(template_name='index.html'),
+            name='frontend_spa',
+        )
+    )

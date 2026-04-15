@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Download, Eye, FileText, Search, Users, X } from 'lucide-react';
+import { apiUrl } from '../api';
 
 type RegistrationRow = {
   id: number;
@@ -35,9 +36,9 @@ type PaginationMeta = {
   hasPrevious: boolean;
 };
 
-const LIST_API = '/api/manage/registrations/';
-const CSV_EXPORT_URL = '/api/manage/export/csv/';
-const PDF_EXPORT_URL = '/api/manage/export/pdf/';
+const LIST_API = apiUrl('/api/manage/registrations/');
+const CSV_EXPORT_URL = apiUrl('/api/manage/export/csv/');
+const PDF_EXPORT_URL = apiUrl('/api/manage/export/pdf/');
 
 export function ManagePage() {
   const [rows, setRows] = useState<RegistrationRow[]>([]);
