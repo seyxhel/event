@@ -5,7 +5,7 @@ import { SuccessPage } from './pages/SuccessPage';
 import { ManagePage } from './pages/ManagePage';
 export function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="min-h-screen flex flex-col bg-[#f8faf8] text-gray-900 selection:bg-green-200 selection:text-green-900">
         <main className="flex-1">
         <Routes>

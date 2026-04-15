@@ -63,10 +63,15 @@ export function RegistrationPage() {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
+    let nextValue = value;
+    if (name === 'middleInitial') {
+      nextValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 1);
+    }
+
     setFormData((prev) => {
       const newData = {
         ...prev,
-        [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : value
+        [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : nextValue
       } as FormData;
 
       if (name === 'willCome') {
@@ -299,7 +304,7 @@ export function RegistrationPage() {
               <FormField label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required className="md:col-span-2" />
               <FormField label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} error={errors.lastName} required />
               <FormField label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} error={errors.firstName} required />
-              <FormField label="Middle Initial" name="middleInitial" value={formData.middleInitial} onChange={handleChange} maxLength={2} />
+              <FormField label="Middle Initial" name="middleInitial" value={formData.middleInitial} onChange={handleChange} maxLength={1} />
               <FormField label="Designation / Job Title" name="designation" value={formData.designation} onChange={handleChange} />
 
               <SectionTitle title="Contact Details" className="mt-4" />

@@ -1,3 +1,5 @@
+import re
+
 from django import forms
 
 from .models import EventRegistration
@@ -90,9 +92,13 @@ class EventRegistrationForm(forms.ModelForm):
 
     def clean_middle_initial(self):
         middle_initial = (self.cleaned_data.get('middle_initial') or '').strip().upper()
-        if middle_initial and len(middle_initial) != 1:
-            raise forms.ValidationError('Middle initial must be exactly one character.')
-        return middle_initial
+        if not middle_initial:
+            return ''
+
+        if len(middle_initial) != 1 or not re.match(r'^[A-Z0-9]$', middle_initial):
+            raise forms.ValidationError('Middle initial must be exactly one letter or number.')
+
+        return f'{middle_initial}.'
 
     def clean_data_privacy_consent(self):
         consent = self.cleaned_data.get('data_privacy_consent')

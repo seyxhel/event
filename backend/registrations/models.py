@@ -5,7 +5,7 @@ class EventRegistration(models.Model):
 	email = models.EmailField()
 	last_name = models.CharField(max_length=100)
 	first_name = models.CharField(max_length=100)
-	middle_initial = models.CharField(max_length=1)
+	middle_initial = models.CharField(max_length=2)
 	designation = models.CharField(max_length=150)
 	mobile_cp_no = models.CharField(max_length=30)
 	viber_no = models.CharField(max_length=30)
