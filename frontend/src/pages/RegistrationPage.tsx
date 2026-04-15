@@ -6,7 +6,7 @@ import { ScrollFadeBanner } from '../components/ScrollFadeBanner';
 import { apiUrl } from '../api';
 
 const BANNER_URL = '/event-banner.jpeg';
-const API_URL = import.meta.env.VITE_API_REGISTER_URL || apiUrl('/api/register/');
+const API_URL = apiUrl('/api/register/');
 
 interface FormData {
   privacyAccepted: boolean;
