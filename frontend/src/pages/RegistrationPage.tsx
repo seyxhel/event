@@ -83,10 +83,18 @@ export function RegistrationPage() {
     return REQUIRED_FIELD_CHECKS.filter((check) => check(formData)).length;
   }, [formData]);
 
-  const completionPercentage = Math.round(
-    (completedChecks / REQUIRED_FIELD_CHECKS.length) * 100
-  );
-  const requiredRemaining = REQUIRED_FIELD_CHECKS.length - completedChecks;
+  const baselineCompletedChecks = useMemo(() => {
+    return REQUIRED_FIELD_CHECKS.filter((check) => check(initialFormData)).length;
+  }, []);
+
+  const actionableTotalChecks = REQUIRED_FIELD_CHECKS.length - baselineCompletedChecks;
+  const actionableCompletedChecks = Math.max(0, completedChecks - baselineCompletedChecks);
+
+  const completionPercentage =
+    actionableTotalChecks > 0
+      ? Math.round((actionableCompletedChecks / actionableTotalChecks) * 100)
+      : 0;
+  const requiredRemaining = Math.max(0, actionableTotalChecks - actionableCompletedChecks);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>

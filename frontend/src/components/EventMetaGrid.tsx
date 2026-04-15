@@ -61,12 +61,17 @@ export function EventMetaGrid({ className = '' }: EventMetaGridProps) {
     isVenuePreviewOpen && typeof document !== 'undefined'
       ? createPortal(
           <div
-            className="fixed inset-0 z-[120] flex items-center justify-center bg-[#1d3f30]/35 p-2 backdrop-blur-[2px] sm:p-3"
+            className="fixed inset-0 z-[120] flex items-center justify-center bg-[#10281e]/52 p-2 backdrop-blur-[4px] sm:p-3"
             onClick={() => setIsVenuePreviewOpen(false)}
             role="presentation"
           >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_36%,rgba(255,255,255,0.16),transparent_62%)]"
+            />
+
             <section
-              className="glass-panel max-h-[84vh] w-full max-w-[680px] overflow-y-auto p-2.5 sm:p-3.5"
+              className="glass-panel relative z-10 max-h-[84vh] w-full max-w-[680px] overflow-y-auto p-2.5 sm:p-3.5"
               onClick={(event) => event.stopPropagation()}
               role="dialog"
               aria-modal="true"
