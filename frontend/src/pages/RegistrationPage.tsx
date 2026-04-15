@@ -1,9 +1,19 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Phone, Mail, ShieldCheck, AlertCircle } from 'lucide-react';
+import {
+  AlertCircle,
+  Building2,
+  Car,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Users
+} from 'lucide-react';
 import { ScrollFadeBanner } from '../components/ScrollFadeBanner';
+import { EventMetaGrid } from '../components/EventMetaGrid';
 import { apiUrl } from '../api';
+import { EVENT_CONTACTS, EVENT_DETAILS } from '../eventDetails';
 
 const BANNER_URL = '/event-banner.jpeg';
 const API_URL = apiUrl('/api/register/');
@@ -52,6 +62,16 @@ const initialFormData: FormData = {
   attendeeCount: 0
 };
 
+const REQUIRED_FIELD_CHECKS: Array<(data: FormData) => boolean> = [
+  (data) => data.privacyAccepted,
+  (data) => data.email.trim().length > 0,
+  (data) => data.lastName.trim().length > 0,
+  (data) => data.firstName.trim().length > 0,
+  (data) => data.mobileNo.trim().length > 0,
+  (data) => data.companyName.trim().length > 0,
+  (data) => !data.willCome || data.attendeeCount >= 1
+];
+
 export function RegistrationPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>(initialFormData);
@@ -59,7 +79,18 @@ export function RegistrationPage() {
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const completedChecks = useMemo(() => {
+    return REQUIRED_FIELD_CHECKS.filter((check) => check(formData)).length;
+  }, [formData]);
+
+  const completionPercentage = Math.round(
+    (completedChecks / REQUIRED_FIELD_CHECKS.length) * 100
+  );
+  const requiredRemaining = REQUIRED_FIELD_CHECKS.length - completedChecks;
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
 
@@ -71,7 +102,8 @@ export function RegistrationPage() {
     setFormData((prev) => {
       const newData = {
         ...prev,
-        [name]: type === 'checkbox' ? checked : type === 'number' ? Number(value) : nextValue
+        [name]:
+          type === 'checkbox' ? checked : type === 'number' ? Number(value) : nextValue
       } as FormData;
 
       if (name === 'willCome') {
@@ -87,6 +119,7 @@ export function RegistrationPage() {
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
+
     if (!formData.privacyAccepted) {
       newErrors.privacyAccepted = 'You must accept the Data Privacy Act to proceed.';
     }
@@ -127,7 +160,7 @@ export function RegistrationPage() {
       company_id_to_bring: 'bringCompanyId',
       vehicle_type: 'vehicleType',
       will_come: 'willCome',
-      attendee_count: 'attendeeCount',
+      attendee_count: 'attendeeCount'
     };
 
     const mapped: Partial<Record<keyof FormData, string>> = {};
@@ -181,7 +214,7 @@ export function RegistrationPage() {
           refNumber: data.reference
         }
       });
-    } catch (error) {
+    } catch (_error) {
       setSubmitError('Unable to connect to server. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -198,139 +231,285 @@ export function RegistrationPage() {
   };
 
   return (
-    <div className="min-h-screen pb-20 bg-[#f8faf8]">
+    <div className="min-h-screen pb-14 sm:pb-16">
       <ScrollFadeBanner
         src={BANNER_URL}
-        alt="The Cybersecurity Implementation Journey"
-        maxHeightClassName="max-h-[60vh]"
-        maxHeightVh={60}
-        fadeDistance={520}
+        alt={EVENT_DETAILS.shortName}
+        maxHeightClassName="max-h-[64vh]"
+        maxHeightVh={64}
+        fadeDistance={540}
       />
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 relative z-10">
-        <div className="rounded-2xl border border-[#d8e8cf] bg-white/95 shadow-lg backdrop-blur px-5 py-4 md:px-6 md:py-5">
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4 text-sm text-gray-700">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#d4a843]">Date</p>
-              <p className="mt-1 font-semibold">May 12, 2026, Tuesday</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#d4a843]">Venue</p>
-              <p className="mt-1 font-semibold">Oasis Manila</p>
-              <p className="text-xs text-gray-500">Aurora Blvd, San Juan City</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#d4a843]">Event Time</p>
-              <p className="mt-1 font-semibold">9:00 AM - 5:00 PM</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#d4a843]">Registration Starts</p>
-              <p className="mt-1 font-semibold">8:00 AM</p>
-            </div>
-          </div>
-        </div>
+      <div className="relative z-10 mx-auto mt-5 max-w-6xl px-3 sm:mt-6 sm:px-6 lg:px-8">
+        <EventMetaGrid />
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8 relative z-10">
+      <div className="relative z-10 mx-auto mt-5 max-w-6xl px-3 sm:mt-6 sm:px-6 lg:px-8">
         <motion.section
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8 bg-white border-t-4 border-t-[#d4a843] rounded-2xl p-6 md:p-8 shadow-lg"
+          transition={{ duration: 0.38 }}
+          className="glass-panel section-reveal hover-lift overflow-hidden p-4 sm:p-6 md:p-8"
         >
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-green-600" />
+          <p className="meta-badge inline-flex">Maptech Information Solutions Inc.</p>
+          <h1 className="display-font mt-4 text-3xl leading-[0.98] text-[#1f4736] sm:text-4xl md:text-5xl lg:text-6xl">
+            {EVENT_DETAILS.title}
+          </h1>
+          <p className="display-font mt-2 text-xl font-semibold text-[#8b6a22] sm:text-2xl md:text-3xl">
+            {EVENT_DETAILS.subtitle}
+          </p>
+          <p className="mt-5 max-w-3xl text-sm text-[#5f7568] md:text-base">
+            {EVENT_DETAILS.tagline}
+          </p>
+          <div className="accent-divider mt-6" />
+        </motion.section>
+      </div>
+
+      <div className="relative z-10 mx-auto mt-5 max-w-6xl px-3 sm:mt-6 sm:px-6 lg:px-8">
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38, delay: 0.08 }}
+          className="glass-panel section-reveal p-4 sm:p-6 md:p-8"
+        >
+          <h2 className="display-font mb-4 flex items-center gap-2 text-xl text-[#1f4736] sm:text-2xl md:mb-5 md:text-3xl">
+            <ShieldCheck className="h-6 w-6 text-[#3f8657]" />
             Event Contacts
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Maptech Information Solutions Inc.</h3>
-              <ul className="space-y-3 text-gray-600">
-                <li className="flex items-center gap-3"><Phone className="w-4 h-4 text-[#d4a843]" /><span>Ms. Prud De Leon - 0956-396-1012</span></li>
-                <li className="flex items-center gap-3"><Phone className="w-4 h-4 text-[#d4a843]" /><span>Mr. Edar Bernardo - 0999-227-9291</span></li>
-                <li className="flex items-center gap-3"><Phone className="w-4 h-4 text-[#d4a843]" /><span>Mr. Ralph Rivera - 0917-182-8320</span></li>
-                <li className="flex items-center gap-3"><Phone className="w-4 h-4 text-[#d4a843]" /><span>Mr. Daniel Castillo - 0917-148-2857</span></li>
-              </ul>
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+            <div className="space-y-3">
+              {EVENT_CONTACTS.map((contact) => (
+                <div
+                  key={contact.phone}
+                  className="glass-panel-soft hover-lift flex items-center gap-3 px-3 py-2 sm:py-2.5"
+                >
+                  <Phone className="h-4 w-4 shrink-0 text-[#b9923d]" />
+                  <p className="text-sm text-[#2b5642] md:text-base">
+                    {contact.name} - {contact.phone}
+                  </p>
+                </div>
+              ))}
             </div>
-            <div className="flex flex-col justify-center space-y-4 border-t md:border-t-0 md:border-l border-gray-200 pt-6 md:pt-0 md:pl-8">
-              <div className="flex items-center gap-3 text-gray-700"><Phone className="w-5 h-5 text-green-600" /><span className="text-lg font-medium">(02) 8800-5399</span></div>
-              <div className="flex items-center gap-3 text-gray-700"><Mail className="w-5 h-5 text-green-600" /><span className="text-lg font-medium">sales@maptechisi.com</span></div>
+
+            <div className="glass-panel-soft hover-lift flex flex-col justify-center gap-4 p-4 sm:p-5">
+              <div className="flex items-center gap-3 text-[#2b5642]">
+                <Phone className="h-5 w-5 text-[#3f8657]" />
+                <span className="text-base font-semibold sm:text-lg">{EVENT_DETAILS.officeLandline}</span>
+              </div>
+              <div className="flex items-center gap-3 text-[#2b5642]">
+                <Mail className="h-5 w-5 text-[#3f8657]" />
+                <span className="text-base font-semibold sm:text-lg">{EVENT_DETAILS.officeEmail}</span>
+              </div>
             </div>
           </div>
         </motion.section>
+      </div>
 
+      <div className="relative z-10 mx-auto mt-5 max-w-6xl px-3 sm:mt-6 sm:px-6 lg:px-8">
         <motion.section
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-white border border-gray-200 rounded-2xl p-6 md:p-10 shadow-xl"
+          transition={{ duration: 0.38, delay: 0.14 }}
+          className="glass-panel section-reveal p-4 sm:p-6 md:p-10"
         >
-          <div className="mb-8 border-b border-gray-100 pb-6">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Registration Form</h2>
-            <p className="text-gray-500">Please fill out the details below to secure your spot.</p>
+          <header className="mb-6 border-b border-[#c9dbcf]/90 pb-5 sm:mb-8 sm:pb-6">
+            <h2 className="display-font text-2xl text-[#1f4736] sm:text-3xl md:text-4xl">Registration Form</h2>
+            <p className="mt-2 text-sm text-[#5f7568] md:text-base">
+              Complete the required fields below to secure your slot.
+            </p>
+          </header>
+
+          <div className="glass-panel-soft mb-7 p-3.5 sm:mb-8 sm:p-4 md:p-5">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="form-label">Completion Progress</p>
+              <p className="display-font text-lg font-bold text-[#8b6a22]">
+                {completionPercentage}%
+              </p>
+            </div>
+
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[#e3ede6]">
+              <motion.div
+                initial={false}
+                animate={{ width: `${completionPercentage}%` }}
+                transition={{ duration: 0.25 }}
+                className="progress-shimmer h-full rounded-full bg-gradient-to-r from-[#4f9867] via-[#79ab84] to-[#b9923d]"
+              />
+            </div>
+
+            <p className="mt-2 text-xs text-[#607769] md:text-sm">
+              {requiredRemaining === 0
+                ? 'All required fields are complete. You can submit now.'
+                : `${requiredRemaining} required item${requiredRemaining > 1 ? 's' : ''} left.`}
+            </p>
           </div>
 
           {submitError && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-red-600">{submitError}</div>
+            <div className="mb-5 rounded-xl border border-[#d9a1a1] bg-[#fff3f3] p-3.5 text-[#b64a4a]">
+              <p className="flex items-center gap-2 text-sm">
+                <AlertCircle className="h-4 w-4" />
+                {submitError}
+              </p>
+            </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className={`p-4 rounded-lg border ${errors.privacyAccepted ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <div className="relative flex items-center mt-1">
-                  <input
-                    type="checkbox"
-                    name="privacyAccepted"
-                    checked={formData.privacyAccepted}
-                    onChange={handleChange}
-                    className="peer w-5 h-5 appearance-none border-2 border-gray-300 rounded bg-white checked:bg-green-600 checked:border-green-600 transition-colors cursor-pointer"
-                  />
-                  <ShieldCheck className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none transition-opacity" />
-                </div>
-                <span className="text-sm text-gray-700 leading-relaxed font-medium">
-                  I agree to the collection and processing of my personal data in accordance with the Data Privacy Act of 2012 (RA 10173).
+          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
+            <div
+              className={`rounded-xl border p-3.5 sm:p-4 ${
+                errors.privacyAccepted
+                  ? 'border-[#d9a1a1] bg-[#fff4f4]'
+                  : 'border-[#bfd5c7] bg-[#f5faf6]'
+              }`}
+            >
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="privacyAccepted"
+                  checked={formData.privacyAccepted}
+                  onChange={handleChange}
+                  className="peer sr-only"
+                />
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#a9c2b2] bg-[#ffffff] peer-checked:border-[#3f8657] peer-checked:bg-[#3f8657]">
+                  <ShieldCheck className="h-4 w-4 text-[#ffffff] opacity-0 transition-opacity peer-checked:opacity-100" />
+                </span>
+                <span className="text-sm text-[#335f49] md:text-base">
+                  I agree to the collection and processing of my personal data in accordance with
+                  the Data Privacy Act of 2012 (RA 10173).
                 </span>
               </label>
+
               {errors.privacyAccepted && (
-                <p className="mt-2 text-sm text-red-500 flex items-center gap-1 font-medium">
-                  <AlertCircle className="w-4 h-4" /> {errors.privacyAccepted}
+                <p className="mt-2 flex items-center gap-1 text-sm text-[#b64a4a]">
+                  <AlertCircle className="h-4 w-4" />
+                  {errors.privacyAccepted}
                 </p>
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SectionTitle title="Personal Details" />
-              <FormField label="Email Address" name="email" type="email" value={formData.email} onChange={handleChange} error={errors.email} required className="md:col-span-2" />
-              <FormField label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} error={errors.lastName} required />
-              <FormField label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} error={errors.firstName} required />
-              <FormField label="Middle Initial" name="middleInitial" value={formData.middleInitial} onChange={handleChange} maxLength={1} />
-              <FormField label="Designation / Job Title" name="designation" value={formData.designation} onChange={handleChange} />
+            <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2">
+              <SectionTitle title="Personal Details" icon={Users} />
+              <FormField
+                label="Email Address"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleChange}
+                error={errors.email}
+                required
+                className="md:col-span-2"
+              />
+              <FormField
+                label="Last Name"
+                name="lastName"
+                value={formData.lastName}
+                onChange={handleChange}
+                error={errors.lastName}
+                required
+              />
+              <FormField
+                label="First Name"
+                name="firstName"
+                value={formData.firstName}
+                onChange={handleChange}
+                error={errors.firstName}
+                required
+              />
+              <FormField
+                label="Middle Initial"
+                name="middleInitial"
+                value={formData.middleInitial}
+                onChange={handleChange}
+                maxLength={1}
+              />
+              <FormField
+                label="Designation / Job Title"
+                name="designation"
+                value={formData.designation}
+                onChange={handleChange}
+              />
 
-              <SectionTitle title="Contact Details" className="mt-4" />
-              <FormField label="Mobile / Cellphone No." name="mobileNo" value={formData.mobileNo} onChange={handleChange} error={errors.mobileNo} required />
-              <FormField label="Viber No." name="viberNo" value={formData.viberNo} onChange={handleChange} />
-              <FormField label="GCash No. (for raffle)" name="gcashNo" value={formData.gcashNo} onChange={handleChange} />
-              <FormField label="Personal Email Address" name="personalEmail" type="email" value={formData.personalEmail} onChange={handleChange} className="md:col-span-2" />
+              <SectionTitle title="Contact Details" icon={Phone} className="mt-2" />
+              <FormField
+                label="Mobile / Cellphone No."
+                name="mobileNo"
+                value={formData.mobileNo}
+                onChange={handleChange}
+                error={errors.mobileNo}
+                required
+              />
+              <FormField
+                label="Viber No."
+                name="viberNo"
+                value={formData.viberNo}
+                onChange={handleChange}
+              />
+              <FormField
+                label="GCash No. (for raffle)"
+                name="gcashNo"
+                value={formData.gcashNo}
+                onChange={handleChange}
+              />
+              <FormField
+                label="Personal Email Address"
+                name="personalEmail"
+                type="email"
+                value={formData.personalEmail}
+                onChange={handleChange}
+                className="md:col-span-2"
+              />
 
-              <SectionTitle title="Company Details" className="mt-4" />
-              <FormField label="Company Name" name="companyName" value={formData.companyName} onChange={handleChange} error={errors.companyName} required className="md:col-span-2" />
-              <FormField label="Industry Type" name="industryType" value={formData.industryType} onChange={handleChange} />
-              <FormField label="Company Landline No." name="companyLandline" value={formData.companyLandline} onChange={handleChange} />
-              <FormField label="Company Office Address" name="companyAddress" value={formData.companyAddress} onChange={handleChange} className="md:col-span-2" />
-              <FormField label="Company Email Address" name="companyEmail" type="email" value={formData.companyEmail} onChange={handleChange} className="md:col-span-2" />
+              <SectionTitle title="Company Details" icon={Building2} className="mt-2" />
+              <FormField
+                label="Company Name"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleChange}
+                error={errors.companyName}
+                required
+                className="md:col-span-2"
+              />
+              <FormField
+                label="Industry Type"
+                name="industryType"
+                value={formData.industryType}
+                onChange={handleChange}
+              />
+              <FormField
+                label="Company Landline No."
+                name="companyLandline"
+                value={formData.companyLandline}
+                onChange={handleChange}
+              />
+              <FormField
+                label="Company Office Address"
+                name="companyAddress"
+                value={formData.companyAddress}
+                onChange={handleChange}
+                className="md:col-span-2"
+              />
+              <FormField
+                label="Company Email Address"
+                name="companyEmail"
+                type="email"
+                value={formData.companyEmail}
+                onChange={handleChange}
+                className="md:col-span-2"
+              />
 
-              <SectionTitle title="Event Logistics" className="mt-4" />
-              <div className="md:col-span-2 flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="bringCompanyId"
-                  name="bringCompanyId"
-                  checked={formData.bringCompanyId}
-                  onChange={handleChange}
-                  className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                />
-                <label htmlFor="bringCompanyId" className="text-sm font-medium text-gray-700">I will bring my company ID</label>
+              <SectionTitle title="Event Logistics" icon={Car} className="mt-2" />
+
+              <div className="glass-panel-soft md:col-span-2 p-3.5 sm:p-4">
+                <label className="flex cursor-pointer items-center gap-3 text-sm text-[#335f49] md:text-base">
+                  <input
+                    type="checkbox"
+                    id="bringCompanyId"
+                    name="bringCompanyId"
+                    checked={formData.bringCompanyId}
+                    onChange={handleChange}
+                    className="h-4 w-4 rounded border-[#9ebdae] bg-[#ffffff] text-[#3f8657] focus:ring-[#3f8657]/45"
+                  />
+                  I will bring my company ID.
+                </label>
               </div>
 
               <FormField
@@ -338,26 +517,26 @@ export function RegistrationPage() {
                 name="vehicleType"
                 value={formData.vehicleType}
                 onChange={handleChange}
-                placeholder="e.g., Car, Motorcycle, None"
+                placeholder="Car, motorcycle, none, etc."
                 className="md:col-span-2"
               />
 
-              <div className="md:col-span-2 p-4 bg-gray-50 rounded-lg border border-gray-200 flex flex-col sm:flex-row sm:items-center gap-6">
-                <div className="flex items-center gap-3">
+              <div className="glass-panel-soft md:col-span-2 grid gap-4 p-3.5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-4">
+                <label className="flex cursor-pointer items-center gap-3 text-sm text-[#335f49] md:text-base">
                   <input
                     type="checkbox"
                     id="willCome"
                     name="willCome"
                     checked={formData.willCome}
                     onChange={handleChange}
-                    className="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                    className="h-4 w-4 rounded border-[#9ebdae] bg-[#ffffff] text-[#3f8657] focus:ring-[#3f8657]/45"
                   />
-                  <label htmlFor="willCome" className="text-sm font-bold text-gray-900">I will attend the event</label>
-                </div>
+                  I will attend the event.
+                </label>
 
-                <div className="flex-1 max-w-xs">
+                <div className="w-full sm:min-w-[200px]">
                   <FormField
-                    label="Attendee count"
+                    label="Attendee Count"
                     name="attendeeCount"
                     type="number"
                     value={formData.attendeeCount.toString()}
@@ -369,18 +548,19 @@ export function RegistrationPage() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-200">
+            <div className="flex flex-col gap-3 border-t border-[#cadbcf] pt-6 sm:flex-row sm:pt-7">
               <button
                 type="button"
                 onClick={handleClear}
-                className="px-6 py-3 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors focus:ring-2 focus:ring-gray-200 focus:outline-none w-full sm:w-auto"
+                className="secondary-btn px-6 py-2.5 text-sm md:text-base"
               >
                 Clear Form
               </button>
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-8 py-3 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:outline-none w-full sm:w-auto sm:ml-auto shadow-md hover:shadow-lg disabled:opacity-60"
+                className="primary-btn sm:ml-auto px-7 py-2.5 text-sm disabled:cursor-not-allowed disabled:opacity-60 md:text-base"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Registration'}
               </button>
@@ -394,16 +574,20 @@ export function RegistrationPage() {
 
 type SectionTitleProps = {
   title: string;
+  icon: React.ComponentType<{ className?: string }>;
   className?: string;
 };
 
-function SectionTitle({ title, className = '' }: SectionTitleProps) {
+function SectionTitle({ title, icon: Icon, className = '' }: SectionTitleProps) {
   return (
     <div className={`md:col-span-2 ${className}`}>
-      <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-        <span className="w-2 h-6 bg-[#d4a843] rounded-full"></span>
+      <h3 className="display-font flex items-center gap-2 text-xl text-[#1f4736] sm:text-2xl md:text-[1.75rem]">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-[#a8c2b3] bg-[#f2f8f3] sm:h-8 sm:w-8">
+          <Icon className="h-4 w-4 text-[#3f8657]" />
+        </span>
         {title}
       </h3>
+      <div className="accent-divider mt-2" />
     </div>
   );
 }
@@ -437,10 +621,11 @@ function FormField({
 }: FormFieldProps) {
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
-      <label htmlFor={name} className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+      <label htmlFor={name} className="form-label flex items-center gap-1">
         {label}
-        {required && <span className="text-red-500">*</span>}
+        {required && <span className="text-[#c05b5b]">*</span>}
       </label>
+
       <input
         type={type}
         id={name}
@@ -451,15 +636,12 @@ function FormField({
         placeholder={placeholder}
         disabled={disabled}
         min={type === 'number' ? '0' : undefined}
-        className={`
-          w-full px-4 py-2.5 rounded-lg bg-white border
-          ${error ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : 'border-gray-300 focus:border-green-500 focus:ring-green-200'}
-          ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'text-gray-900'}
-          placeholder-gray-400
-          focus:outline-none focus:ring-4 transition-all shadow-sm
-        `}
+        className={`form-input ${error ? 'form-input-error' : ''} ${
+          disabled ? 'form-input-disabled' : ''
+        }`}
       />
-      {error && <span className="text-xs text-red-500 font-medium mt-0.5">{error}</span>}
+
+      {error && <span className="text-xs text-[#b64a4a]">{error}</span>}
     </div>
   );
 }

@@ -1,24 +1,24 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { RegistrationPage } from './pages/RegistrationPage';
-import { SuccessPage } from './pages/SuccessPage';
-import { ManagePage } from './pages/ManagePage';
+import { RegistrationPage } from './pages/RegistrationPage.tsx';
+import { SuccessPage } from './pages/SuccessPage.tsx';
+import { ManagePage } from './pages/ManagePage.tsx';
+
 export function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="min-h-screen flex flex-col bg-[#f8faf8] text-gray-900 selection:bg-green-200 selection:text-green-900">
-        <main className="flex-1">
-        <Routes>
-          <Route path="/" element={<RegistrationPage />} />
-          <Route path="/success" element={<SuccessPage />} />
-          <Route path="/manage" element={<ManagePage />} />
-        </Routes>
+      <div className="event-shell flex min-h-screen flex-col selection:bg-[#f5e9c8] selection:text-[#1d3f31]">
+        <main className="relative z-10 flex-1">
+          <Routes>
+            <Route path="/" element={<RegistrationPage />} />
+            <Route path="/success" element={<SuccessPage />} />
+            <Route path="/manage" element={<ManagePage />} />
+          </Routes>
         </main>
 
-        <footer className="border-t border-gray-200 bg-white/80 py-4 text-center text-sm text-gray-500 backdrop-blur">
+        <footer className="relative z-10 border-t border-[#c9dbcf]/85 bg-[#ffffff]/90 py-4 text-center text-xs tracking-wide text-[#5f7568] backdrop-blur">
           Copyright © Maptech Information Solutions Inc. All Rights Reserved.
         </footer>
       </div>
-    </BrowserRouter>);
-
+    </BrowserRouter>
+  );
 }

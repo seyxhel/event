@@ -1,26 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Camera, Calendar, Hash, User, Mail } from 'lucide-react';
+import {
+  Calendar,
+  Camera,
+  Check,
+  CheckCircle2,
+  Copy,
+  Hash,
+  Mail,
+  User
+} from 'lucide-react';
 import { ScrollFadeBanner } from '../components/ScrollFadeBanner';
+import { EventMetaGrid } from '../components/EventMetaGrid';
+import { EVENT_DETAILS } from '../eventDetails';
 
-const BANNER_URL = '/WhatsApp_Image_2026-04-15_at_14.57.21.jpg';
+const BANNER_URL = '/event-banner.jpeg';
 
 export function SuccessPage() {
   const location = useLocation();
   const [currentDate, setCurrentDate] = useState('');
-  const state = location.state as {
+  const [copied, setCopied] = useState(false);
+
+  const state = (location.state as {
     firstName?: string;
     lastName?: string;
     email?: string;
     refNumber?: string;
-  } | null;
+  }) || null;
+
   const fullName =
-  state?.firstName && state?.lastName ?
-  `${state.firstName} ${state.lastName}` :
-  'Guest';
+    state?.firstName && state?.lastName ? `${state.firstName} ${state.lastName}` : 'Guest';
   const email = state?.email || 'Not provided';
   const refNumber = state?.refNumber || 'MAP-XXXX-XXXX';
+
   useEffect(() => {
     const now = new Date();
     setCurrentDate(
@@ -34,176 +47,152 @@ export function SuccessPage() {
       })
     );
   }, []);
+
+  useEffect(() => {
+    if (!copied) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setCopied(false);
+    }, 1600);
+
+    return () => window.clearTimeout(timeout);
+  }, [copied]);
+
+  const handleCopyRef = async () => {
+    try {
+      await navigator.clipboard.writeText(refNumber);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen pb-20 flex flex-col items-center bg-[#f8faf8]">
+    <div className="min-h-screen pb-14 sm:pb-16">
       <ScrollFadeBanner
         src={BANNER_URL}
-        alt="The Cybersecurity Implementation Journey"
-        maxHeightClassName="max-h-[20vh]"
-        maxHeightVh={20}
-        fadeDistance={260}
-        className="mb-12"
+        alt={EVENT_DETAILS.shortName}
+        maxHeightClassName="max-h-[34vh]"
+        maxHeightVh={34}
+        fadeDistance={320}
       />
 
-      <div className="max-w-2xl w-full px-4 sm:px-6 mt-6 relative z-10 mb-6">
-        <div className="rounded-2xl border border-[#d8e8cf] bg-white/95 shadow-lg backdrop-blur px-5 py-4 md:px-6 md:py-5 text-center">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm text-gray-700">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#d4a843]">Date</p>
-              <p className="mt-1 font-semibold">May 12, 2026, Tuesday</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#d4a843]">Venue</p>
-              <p className="mt-1 font-semibold">Oasis Manila</p>
-              <p className="text-xs text-gray-500">Aurora Blvd, San Juan City</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#d4a843]">Event Time</p>
-              <p className="mt-1 font-semibold">9:00 AM - 5:00 PM</p>
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-[#d4a843]">Registration Starts</p>
-              <p className="mt-1 font-semibold">8:00 AM</p>
-            </div>
-          </div>
-        </div>
+      <div className="relative z-10 mx-auto mt-5 max-w-5xl px-3 sm:mt-6 sm:px-6 lg:px-8">
+        <EventMetaGrid />
       </div>
 
-      <div className="max-w-2xl w-full px-4 sm:px-6 mt-2 relative z-10">
-        <motion.div
-          initial={{
-            opacity: 0,
-            scale: 0.95
-          }}
-          animate={{
-            opacity: 1,
-            scale: 1
-          }}
-          transition={{
-            duration: 0.5
-          }}
-          className="bg-white border border-gray-200 rounded-2xl p-8 md:p-12 shadow-xl relative overflow-hidden">
-          
-          {/* Decorative background element */}
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#d4a843] via-green-500 to-[#d4a843]"></div>
+      <div className="relative z-10 mx-auto mt-5 max-w-4xl px-3 sm:mt-6 sm:px-6 lg:px-8">
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38 }}
+          className="glass-panel section-reveal relative overflow-hidden p-4 sm:p-7 md:p-10"
+        >
+          <div className="pointer-events-none absolute left-0 top-0 h-1.5 w-full bg-gradient-to-r from-[#b9923d] via-[#3f8657] to-[#b9923d]" />
 
-          <div className="flex flex-col items-center text-center mb-8">
-            <motion.div
-              initial={{
-                scale: 0
-              }}
-              animate={{
-                scale: 1
-              }}
-              transition={{
-                delay: 0.3,
-                type: 'spring',
-                stiffness: 200
-              }}>
-              
-              <CheckCircle2 className="w-20 h-20 text-green-500 mb-6" />
-            </motion.div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Registration Successful!
+          <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
+            <CheckCircle2 className="soft-float mb-4 h-16 w-16 text-[#3f8657] sm:h-20 sm:w-20" />
+            <h1 className="display-font text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
+              Registration Successful
             </h1>
-            <p className="text-gray-600 text-lg max-w-lg">
-              Thank you for registering for{' '}
-              <strong className="text-gray-900">
-                The Cybersecurity Implementation Journey: From Framework to
-                Reality
-              </strong>{' '}
-              on May 12, 2026.
+            <p className="mt-3 max-w-xl text-sm text-[#5f7568] md:text-base">
+              Thank you for registering for {EVENT_DETAILS.title}: {EVENT_DETAILS.subtitle}.
             </p>
           </div>
 
-          {/* Important Instruction Box */}
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 20
-            }}
-            animate={{
-              opacity: 1,
-              y: 0
-            }}
-            transition={{
-              delay: 0.5
-            }}
-            className="bg-green-50 border-2 border-green-200 rounded-xl p-6 mb-8 flex flex-col items-center text-center">
-            
-            <Camera className="w-8 h-8 text-green-600 mb-3" />
-            <h2 className="text-xl font-bold text-green-800 mb-2">
-              Important Next Step
-            </h2>
-            <p className="text-gray-900 font-semibold">
-              Please take a screenshot of this page.
+          <motion.article
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12, duration: 0.32 }}
+            className="glass-panel-soft hover-lift mb-6 flex flex-col items-center rounded-xl p-4 text-center sm:mb-7 sm:p-5"
+          >
+            <Camera className="mb-2 h-8 w-8 text-[#b9923d]" />
+            <h2 className="display-font text-xl text-[#214736] sm:text-2xl">Important Next Step</h2>
+            <p className="mt-2 text-sm text-[#5f7568] md:text-base">
+              Please take a screenshot of this page and present it at the entrance.
             </p>
-            <p className="text-gray-600 text-sm mt-1">
-              You must present this screenshot before entering the event.
-            </p>
-          </motion.div>
+          </motion.article>
 
-          {/* Registration Details Summary */}
-          <div className="bg-gray-50 rounded-xl p-6 border border-gray-200 mb-8">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4 border-b border-gray-200 pb-2">
-              Registration Details
-            </h3>
+          <article className="glass-panel-soft rounded-xl p-4 sm:p-5 md:p-6">
+            <h3 className="form-label mb-4">Registration Details</h3>
 
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <Hash className="w-5 h-5 text-[#d4a843] mt-0.5" />
-                <div>
-                  <p className="text-xs font-semibold text-gray-500">
-                    Reference Number
-                  </p>
-                  <p className="text-gray-900 font-mono font-bold tracking-wide">
-                    {refNumber}
-                  </p>
-                </div>
-              </div>
+            <div className="space-y-3 text-sm sm:space-y-4 md:text-base">
+              <DetailBlock
+                icon={<Hash className="h-5 w-5 text-[#b9923d]" />}
+                label="Reference Number"
+                value={refNumber}
+                extra={
+                  <button
+                    type="button"
+                    onClick={handleCopyRef}
+                    className="secondary-btn mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy Ref
+                      </>
+                    )}
+                  </button>
+                }
+              />
 
-              <div className="flex items-start gap-3">
-                <User className="w-5 h-5 text-[#d4a843] mt-0.5" />
-                <div>
-                  <p className="text-xs font-semibold text-gray-500">
-                    Registrant Name
-                  </p>
-                  <p className="text-gray-900 font-medium">{fullName}</p>
-                </div>
-              </div>
+              <DetailBlock
+                icon={<User className="h-5 w-5 text-[#b9923d]" />}
+                label="Registrant Name"
+                value={fullName}
+              />
 
-              <div className="flex items-start gap-3">
-                <Mail className="w-5 h-5 text-[#d4a843] mt-0.5" />
-                <div>
-                  <p className="text-xs font-semibold text-gray-500">
-                    Email Address
-                  </p>
-                  <p className="text-gray-900">{email}</p>
-                </div>
-              </div>
+              <DetailBlock
+                icon={<Mail className="h-5 w-5 text-[#b9923d]" />}
+                label="Email Address"
+                value={email}
+              />
 
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-[#d4a843] mt-0.5" />
-                <div>
-                  <p className="text-xs font-semibold text-gray-500">
-                    Registration Date
-                  </p>
-                  <p className="text-gray-900 text-sm">{currentDate}</p>
-                </div>
-              </div>
+              <DetailBlock
+                icon={<Calendar className="h-5 w-5 text-[#b9923d]" />}
+                label="Registration Date"
+                value={currentDate}
+              />
             </div>
-          </div>
+          </article>
 
-          <div className="flex justify-center">
-            <Link
-              to="/"
-              className="text-green-600 hover:text-green-700 font-semibold transition-colors flex items-center gap-2 hover:underline underline-offset-4">
-              
+          <div className="mt-6 text-center sm:mt-8">
+            <Link to="/" className="ghost-link text-sm font-semibold md:text-base">
               Register Another Person
             </Link>
           </div>
-        </motion.div>
+        </motion.section>
       </div>
-    </div>);
+    </div>
+  );
+}
 
+type DetailBlockProps = {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  extra?: React.ReactNode;
+};
+
+function DetailBlock({ icon, label, value, extra }: DetailBlockProps) {
+  return (
+    <div className="rounded-lg border border-[#cfded3] bg-[#f7fbf8] p-3 sm:p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5">{icon}</div>
+        <div>
+          <p className="form-label text-[0.72rem] text-[#5f7568]">{label}</p>
+          <p className="mt-1 break-words text-[#214736]">{value}</p>
+          {extra}
+        </div>
+      </div>
+    </div>
+  );
 }
