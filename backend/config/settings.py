@@ -5,6 +5,13 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Prefer bundled frontend build inside backend image, then local frontend dist in dev.
+FRONTEND_DIST_DIR = BASE_DIR / "frontend_dist"
+if not FRONTEND_DIST_DIR.exists():
+    local_frontend_dist = BASE_DIR.parent / "frontend" / "dist"
+    if local_frontend_dist.exists():
+        FRONTEND_DIST_DIR = local_frontend_dist
+
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
     "dev-only-secret-key-change-in-production",
