@@ -312,7 +312,7 @@ export function RegistrationPage() {
           <div className="relative z-10">
             <p className="meta-badge inline-flex">Maptech Information Solutions Inc.</p>
             <h1 className="display-font mt-4 text-3xl leading-[0.95] text-[#1d4f3a] sm:text-5xl md:text-6xl">
-              {EVENT_DETAILS.title}
+              <span className="glossy-title">{EVENT_DETAILS.title}</span>
             </h1>
             <p className="display-font mt-2 text-2xl font-semibold text-[#8b6a22] sm:text-3xl md:text-4xl">
               {EVENT_DETAILS.subtitle}

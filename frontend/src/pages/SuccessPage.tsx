@@ -7,14 +7,40 @@ import {
   Check,
   CheckCircle2,
   Copy,
+  Cpu,
   Hash,
   Mail,
+  Network,
+  ShieldCheck,
   User
 } from 'lucide-react';
-import { ScrollFadeBanner } from '../components/ScrollFadeBanner';
 import { EVENT_DETAILS } from '../eventDetails';
 
-const BANNER_URL = '/event-banner.jpeg';
+const HERO_HIGHLIGHTS: Array<{
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  cardTone: string;
+  iconTone: string;
+}> = [
+  {
+    icon: ShieldCheck,
+    label: 'Security Controls',
+    cardTone: 'from-[#eafff0] via-[#f4fff8] to-[#edfff9] border-[#b8e4c9]',
+    iconTone: 'border-[#8fcfa2] from-[#d9ffe5] to-[#f2ffe9] text-[#2b8850]'
+  },
+  {
+    icon: Network,
+    label: 'Framework Mapping',
+    cardTone: 'from-[#eef7ff] via-[#f3f9ff] to-[#effcff] border-[#c2d8ee]',
+    iconTone: 'border-[#9fbee1] from-[#dbe9ff] to-[#e9f3ff] text-[#2f689e]'
+  },
+  {
+    icon: Cpu,
+    label: 'Confident Deployment',
+    cardTone: 'from-[#fff6e8] via-[#fff9ef] to-[#f5ffe8] border-[#e3d2a3]',
+    iconTone: 'border-[#d6b97a] from-[#ffeaba] to-[#fff5dc] text-[#9a6f1d]'
+  }
+];
 
 export function SuccessPage() {
   const location = useLocation();
@@ -69,14 +95,87 @@ export function SuccessPage() {
   };
 
   return (
-    <div className="min-h-screen pb-14 sm:pb-16">
-      <ScrollFadeBanner
-        src={BANNER_URL}
-        alt={EVENT_DETAILS.shortName}
-        maxHeightClassName="max-h-[34vh]"
-        maxHeightVh={34}
-        fadeDistance={320}
-      />
+    <div className="min-h-screen pb-14 pt-6 sm:pb-16 sm:pt-8">
+
+      <div className="relative z-10 mx-auto mt-5 max-w-6xl px-3 sm:mt-6 sm:px-6 lg:px-8">
+        <motion.section
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.38 }}
+          className="glass-panel section-reveal relative overflow-hidden p-5 text-center sm:p-7 md:p-9"
+        >
+          <div
+            className="hero-chroma-flow absolute left-0 top-0 h-1.5 w-full"
+            style={{
+              background:
+                'linear-gradient(90deg, #47c974 0%, #65c9ff 34%, #ffd573 68%, #47c974 100%)'
+            }}
+          />
+
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-[#44c176]/20 blur-3xl" />
+            <div className="absolute -left-6 bottom-6 h-36 w-36 rounded-full bg-[#54bff0]/18 blur-3xl" />
+            <div className="absolute bottom-0 right-6 h-36 w-36 rounded-full bg-[#d7b55f]/16 blur-3xl" />
+            <div className="absolute right-5 top-4 h-24 w-24 rounded-full border border-[#c3d7ca]/60 bg-[#f7fcf8]/70" />
+
+            <div className="icon-drift absolute left-4 top-5 hidden h-10 w-10 items-center justify-center rounded-full border border-[#9ecfb2]/85 bg-[#f2fff6]/85 sm:flex">
+              <ShieldCheck className="icon-blink h-4 w-4 text-[#2f8552]" />
+            </div>
+
+            <div
+              className="icon-drift absolute bottom-6 right-4 hidden h-10 w-10 items-center justify-center rounded-full border border-[#bccde4]/85 bg-[#f2f8ff]/85 sm:flex"
+              style={{ animationDelay: '-1.9s' }}
+            >
+              <Network className="icon-blink h-4 w-4 text-[#366aa1]" />
+            </div>
+
+            <div
+              className="absolute inset-0 opacity-[0.16]"
+              style={{
+                backgroundImage:
+                  'linear-gradient(rgba(58,116,83,0.32) 1px, transparent 1px), linear-gradient(90deg, rgba(58,116,83,0.26) 1px, transparent 1px)',
+                backgroundSize: '36px 36px'
+              }}
+            />
+          </div>
+
+          <div className="relative z-10">
+            <p className="meta-badge inline-flex">Maptech Information Solutions Inc.</p>
+            <h1 className="display-font mt-4 text-3xl leading-[0.95] text-[#1d4f3a] sm:text-5xl md:text-6xl">
+              <span className="glossy-title">{EVENT_DETAILS.title}</span>
+            </h1>
+            <p className="display-font mt-2 text-2xl font-semibold text-[#8b6a22] sm:text-3xl md:text-4xl">
+              {EVENT_DETAILS.subtitle}
+            </p>
+            <p className="mx-auto mt-5 max-w-4xl rounded-full border border-[#cadbcf]/85 bg-[#ffffff]/74 px-4 py-2 text-sm tracking-[0.12em] text-[#476556] uppercase md:text-base">
+              {EVENT_DETAILS.tagline}
+            </p>
+
+            <div className="mx-auto mt-5 grid max-w-3xl grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+              {HERO_HIGHLIGHTS.map((item, index) => {
+                const Icon = item.icon;
+
+                return (
+                  <article
+                    key={item.label}
+                    className={`glass-panel-soft flex items-center gap-3 rounded-xl border bg-gradient-to-br px-3 py-2.5 text-left sm:justify-center ${item.cardTone}`}
+                  >
+                    <span
+                      className={`icon-halo flex h-9 w-9 items-center justify-center rounded-lg border bg-gradient-to-br ${item.iconTone}`}
+                      style={{ animationDelay: `${index * 0.45}s` }}
+                    >
+                      <Icon className="icon-blink h-4 w-4" />
+                    </span>
+                    <p className="display-font text-sm text-[#244d39] sm:text-base">{item.label}</p>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="accent-divider mt-6" />
+          </div>
+        </motion.section>
+      </div>
 
       <div className="relative z-10 mx-auto mt-5 max-w-4xl px-3 sm:mt-6 sm:px-6 lg:px-8">
         <motion.section

@@ -255,6 +255,34 @@ h3,
   animation: iconDrift 6.8s ease-in-out infinite;
 }
 
+.glossy-title {
+  position: relative;
+  display: inline-block;
+  isolation: isolate;
+  transition: text-shadow 0.35s ease;
+}
+
+.glossy-title::after {
+  content: '';
+  pointer-events: none;
+  position: absolute;
+  top: -6%;
+  left: -18%;
+  width: 34%;
+  height: 112%;
+  opacity: 0;
+  transform: translateX(-170%) skewX(-18deg);
+  background: linear-gradient(
+    108deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.24) 32%,
+    rgba(255, 255, 255, 0.92) 49%,
+    rgba(255, 255, 255, 0.24) 66%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  mix-blend-mode: screen;
+}
+
 @keyframes sectionReveal {
   from {
     opacity: 0;
@@ -359,6 +387,30 @@ h3,
   }
 }
 
+@keyframes titleGlossSweep {
+  from {
+    transform: translateX(-170%) skewX(-18deg);
+  }
+
+  to {
+    transform: translateX(340%) skewX(-18deg);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glossy-title:hover {
+    text-shadow:
+      0 0 2px rgba(255, 255, 255, 0.56),
+      0 0 16px rgba(142, 226, 177, 0.38),
+      0 7px 20px rgba(30, 79, 60, 0.18);
+  }
+
+  .glossy-title:hover::after {
+    opacity: 1;
+    animation: titleGlossSweep 0.85s cubic-bezier(0.2, 0.7, 0.35, 1);
+  }
+}
+
 @media (max-width: 420px) {
   .glass-panel {
     border-radius: 0.85rem;
@@ -387,6 +439,10 @@ h3,
     animation: none !important;
     transform: none !important;
     transition: none !important;
+  }
+
+  .glossy-title::after {
+    display: none !important;
   }
 }
 
