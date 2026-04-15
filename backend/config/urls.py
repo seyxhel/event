@@ -21,5 +21,5 @@ from django.views.generic import TemplateView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('registrations.urls')),
-    re_path(r'^(?!api/|admin/).*$' , TemplateView.as_view(template_name='index.html'), name='frontend_spa'),
+    re_path(r'^(?!api/|admin/).*$', TemplateView.as_view(template_name='index.html'), name='frontend_spa'),
 ]
