@@ -238,6 +238,23 @@ h3,
   animation: softFloat 8s ease-in-out infinite;
 }
 
+.hero-chroma-flow {
+  background-size: 220% 220%;
+  animation: chromaFlow 9s ease infinite;
+}
+
+.icon-blink {
+  animation: iconBlink 2.6s ease-in-out infinite;
+}
+
+.icon-halo {
+  animation: iconHalo 3.2s ease-in-out infinite;
+}
+
+.icon-drift {
+  animation: iconDrift 6.8s ease-in-out infinite;
+}
+
 @keyframes sectionReveal {
   from {
     opacity: 0;
@@ -271,6 +288,77 @@ h3,
   }
 }
 
+@keyframes chromaFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes iconBlink {
+  0%,
+  38%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  44% {
+    opacity: 0.42;
+    transform: scale(0.92);
+  }
+
+  48% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  54% {
+    opacity: 0.58;
+    transform: scale(0.95);
+  }
+
+  58% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes iconHalo {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(92, 185, 131, 0.15);
+    transform: translateY(0);
+  }
+
+  50% {
+    box-shadow: 0 0 0 9px rgba(92, 185, 131, 0);
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes iconDrift {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  25% {
+    transform: translateY(-3px);
+  }
+
+  75% {
+    transform: translateY(2px);
+  }
+}
+
 @media (max-width: 420px) {
   .glass-panel {
     border-radius: 0.85rem;
@@ -291,6 +379,10 @@ h3,
   .section-reveal,
   .progress-shimmer,
   .soft-float,
+  .hero-chroma-flow,
+  .icon-blink,
+  .icon-halo,
+  .icon-drift,
   .hover-lift {
     animation: none !important;
     transform: none !important;

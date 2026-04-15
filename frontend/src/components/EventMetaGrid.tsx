@@ -35,6 +35,13 @@ const META_ITEMS: MetaItem[] = [
   }
 ];
 
+const META_CARD_TONES = [
+  'from-[#eefaf0] via-[#f8fdf8] to-[#edf9f1] border-[#bfdcc8]',
+  'from-[#eef6ff] via-[#f6fbff] to-[#eef9ff] border-[#c5d8ee]',
+  'from-[#fff7ec] via-[#fffaf3] to-[#f5ffec] border-[#e4d3ac]',
+  'from-[#eff9ff] via-[#f3fcff] to-[#f1fff6] border-[#bfd8df]'
+];
+
 type EventMetaGridProps = {
   className?: string;
 };
@@ -143,11 +150,16 @@ export function EventMetaGrid({ className = '' }: EventMetaGridProps) {
                   viewport={{ once: true, amount: 0.6 }}
                   transition={{ duration: 0.32, delay: index * 0.05 }}
                   onClick={() => setIsVenuePreviewOpen(true)}
-                  className="hover-lift rounded-xl border border-[#d1e0d5] bg-[#f8fbf7]/95 px-2.5 py-2 text-left outline-none transition hover:border-[#b9923d]/60 focus-visible:ring-2 focus-visible:ring-[#b9923d]/45 sm:px-3"
+                  className={`hover-lift rounded-xl border bg-gradient-to-br px-2.5 py-2 text-left outline-none transition hover:border-[#b9923d]/60 focus-visible:ring-2 focus-visible:ring-[#b9923d]/45 sm:px-3 ${META_CARD_TONES[index % META_CARD_TONES.length]}`}
                   aria-label={`Preview map for ${item.value}`}
                 >
                   <p className="meta-badge mb-2 inline-flex items-center gap-1.5">
-                    <Icon className="h-3.5 w-3.5" />
+                    <span
+                      className="icon-blink inline-flex"
+                      style={{ animationDelay: `${0.15 * index}s` }}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
                     {item.label}
                   </p>
                   <p className="text-[0.82rem] font-semibold text-[#244c3a] sm:text-sm md:text-base">
@@ -168,10 +180,15 @@ export function EventMetaGrid({ className = '' }: EventMetaGridProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.6 }}
                 transition={{ duration: 0.32, delay: index * 0.05 }}
-                className="hover-lift rounded-xl border border-[#d1e0d5] bg-[#f8fbf7]/95 px-2.5 py-2 sm:px-3"
+                className={`hover-lift rounded-xl border bg-gradient-to-br px-2.5 py-2 sm:px-3 ${META_CARD_TONES[index % META_CARD_TONES.length]}`}
               >
                 <p className="meta-badge mb-2 inline-flex items-center gap-1.5">
-                  <Icon className="h-3.5 w-3.5" />
+                  <span
+                    className="icon-blink inline-flex"
+                    style={{ animationDelay: `${0.15 * index}s` }}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </span>
                   {item.label}
                 </p>
                 <p className="text-[0.82rem] font-semibold text-[#244c3a] sm:text-sm md:text-base">

@@ -12,7 +12,6 @@ import {
   User
 } from 'lucide-react';
 import { ScrollFadeBanner } from '../components/ScrollFadeBanner';
-import { EventMetaGrid } from '../components/EventMetaGrid';
 import { EVENT_DETAILS } from '../eventDetails';
 
 const BANNER_URL = '/event-banner.jpeg';
@@ -78,10 +77,6 @@ export function SuccessPage() {
         maxHeightVh={34}
         fadeDistance={320}
       />
-
-      <div className="relative z-10 mx-auto mt-5 max-w-5xl px-3 sm:mt-6 sm:px-6 lg:px-8">
-        <EventMetaGrid />
-      </div>
 
       <div className="relative z-10 mx-auto mt-5 max-w-4xl px-3 sm:mt-6 sm:px-6 lg:px-8">
         <motion.section
