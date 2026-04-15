@@ -4,6 +4,19 @@ from .models import EventRegistration
 
 
 class EventRegistrationForm(forms.ModelForm):
+    OPTIONAL_FIELDS = (
+        'middle_initial',
+        'designation',
+        'viber_no',
+        'gcash_no',
+        'personal_email_address',
+        'industry_type',
+        'company_office_address',
+        'company_landline_no',
+        'company_email_address',
+        'vehicle_type',
+    )
+
     class Meta:
         model = EventRegistration
         fields = [
@@ -70,9 +83,14 @@ class EventRegistrationForm(forms.ModelForm):
             'attendee_count': 'How many people will go',
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in self.OPTIONAL_FIELDS:
+            self.fields[field_name].required = False
+
     def clean_middle_initial(self):
-        middle_initial = self.cleaned_data['middle_initial'].strip().upper()
-        if len(middle_initial) != 1:
+        middle_initial = (self.cleaned_data.get('middle_initial') or '').strip().upper()
+        if middle_initial and len(middle_initial) != 1:
             raise forms.ValidationError('Middle initial must be exactly one character.')
         return middle_initial
 
