@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import {
   AlertCircle,
   Building2,
-  Car,
   Check,
   Cpu,
   Mail,
@@ -1157,91 +1156,6 @@ export function RegistrationPage() {
                 className="md:col-span-2"
               />
 
-              <SectionTitle title="Event Logistics" icon={Car} className="mt-2" />
-
-              <div className="glass-panel-soft md:col-span-2 grid gap-3 p-3.5 sm:p-4">
-                <p className="text-sm text-[#335f49] md:text-base">Will you bring a vehicle?</p>
-                <div className="flex flex-wrap gap-3">
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
-                    <input
-                      type="radio"
-                      name="hasVehicle"
-                      value="yes"
-                      checked={formData.hasVehicle}
-                      onChange={handleChange}
-                      className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
-                    />
-                    Yes
-                  </label>
-
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
-                    <input
-                      type="radio"
-                      name="hasVehicle"
-                      value="no"
-                      checked={!formData.hasVehicle}
-                      onChange={handleChange}
-                      className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
-                    />
-                    No
-                  </label>
-                </div>
-              </div>
-
-              {formData.hasVehicle && (
-                <div className="flex flex-col gap-1.5 md:col-span-2">
-                  <p className="form-label flex items-center gap-1">
-                    What type of vehicle will you bring?
-                    <span className="text-[#c05b5b]">*</span>
-                  </p>
-
-                  <div
-                    className={`grid gap-2 sm:grid-cols-2 ${errors.vehicleType ? 'rounded-lg border border-[#d9a1a1] p-2' : ''}`}
-                  >
-                    {[
-                      { value: 'Car', label: 'Car' },
-                      { value: 'SUV/Van', label: 'SUV/Van' },
-                      { value: 'Motorcycle', label: 'Motorcycle' },
-                      { value: 'Pickup Truck', label: 'Pickup Truck' },
-                      { value: 'Other', label: 'Others' }
-                    ].map((option) => (
-                      <label
-                        key={option.value}
-                        className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors md:text-base ${
-                          formData.vehicleType === option.value
-                            ? 'border-[#3f8657] bg-[#eaf5ee] text-[#244f3b]'
-                            : 'border-[#b8d0c0] bg-[#f7fcf8] text-[#335f49]'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="vehicleType"
-                          value={option.value}
-                          checked={formData.vehicleType === option.value}
-                          onChange={handleChange}
-                          className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
-                        />
-                        {option.label}
-                      </label>
-                    ))}
-                  </div>
-
-                  {errors.vehicleType && (
-                    <span className="text-xs text-[#b64a4a]">{errors.vehicleType}</span>
-                  )}
-                </div>
-              )}
-
-              {formData.hasVehicle && formData.vehicleType === 'Other' && (
-                <FormField
-                  label="Please specify"
-                  name="otherVehicleType"
-                  value={formData.otherVehicleType}
-                  onChange={handleChange}
-                  error={errors.otherVehicleType}
-                  className="md:col-span-2"
-                />
-              )}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-[#cadbcf] pt-6 sm:flex-row sm:pt-7">
