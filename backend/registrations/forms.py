@@ -5,6 +5,18 @@ from django import forms
 from .models import EventRegistration
 
 
+INDUSTRY_TYPE_CHOICES = (
+    ('Education', 'Education'),
+    ('Healthcare', 'Healthcare'),
+    ('Retail', 'Retail'),
+    ('Finance', 'Finance'),
+    ('Constructions', 'Constructions'),
+    ('E-Commerce', 'E-Commerce'),
+    ('Others', 'Others'),
+)
+INDUSTRY_TYPE_VALUES = {choice[0] for choice in INDUSTRY_TYPE_CHOICES}
+
+
 class EventRegistrationForm(forms.ModelForm):
     OPTIONAL_FIELDS = (
         'middle_initial',
@@ -66,7 +78,13 @@ class EventRegistrationForm(forms.ModelForm):
                     ('private', 'Private'),
                 ),
             ),
-            'industry_type': forms.TextInput(attrs={'class': 'input-field'}),
+            'industry_type': forms.Select(
+                attrs={'class': 'input-field'},
+                choices=(
+                    ('', 'Select Industry Type'),
+                    *INDUSTRY_TYPE_CHOICES,
+                ),
+            ),
             'company_office_address': forms.Textarea(attrs={'class': 'input-field textarea-field', 'rows': 3}),
             'company_landline_no': forms.TextInput(attrs={'class': 'input-field'}),
             'company_email_address': forms.EmailInput(attrs={'class': 'input-field'}),
@@ -147,6 +165,18 @@ class EventRegistrationForm(forms.ModelForm):
         if category not in {'government', 'private'}:
             raise forms.ValidationError('Company category must be Government or Private.')
         return category
+
+    def clean_industry_type(self):
+        industry_type = (self.cleaned_data.get('industry_type') or '').strip()
+        if not industry_type:
+            raise forms.ValidationError('Industry Type is required.')
+        if industry_type == 'Others':
+            raise forms.ValidationError('Please specify your industry type.')
+        if industry_type in INDUSTRY_TYPE_VALUES:
+            return industry_type
+        if len(industry_type) > 150:
+            raise forms.ValidationError('Specified industry type is too long.')
+        return industry_type
 
     def clean_additional_attendees(self):
         additional_attendees = self.cleaned_data.get('additional_attendees') or []

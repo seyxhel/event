@@ -19,6 +19,16 @@ import { EVENT_CONTACTS, EVENT_DETAILS } from '../eventDetails';
 
 const API_URL = apiUrl('/api/register/');
 
+const INDUSTRY_TYPE_OPTIONS = [
+  'Education',
+  'Healthcare',
+  'Retail',
+  'Finance',
+  'Constructions',
+  'E-Commerce',
+  'Others'
+] as const;
+
 interface AttendeeDetail {
   email: string;
   middleInitial: string;
@@ -60,6 +70,7 @@ interface FormData {
   companyName: string;
   companyCategory: string;
   industryType: string;
+  otherIndustryType: string;
   companyAddress: string;
   companyLandline: string;
   companyEmail: string;
@@ -89,6 +100,7 @@ const initialFormData: FormData = {
   companyName: '',
   companyCategory: '',
   industryType: '',
+  otherIndustryType: '',
   companyAddress: '',
   companyLandline: '',
   companyEmail: '',
@@ -113,6 +125,7 @@ const REQUIRED_FIELD_CHECKS: Array<(data: FormData) => boolean> = [
   (data) => data.companyName.trim().length > 0,
   (data) => data.companyCategory.trim().length > 0,
   (data) => data.industryType.trim().length > 0,
+  (data) => (data.industryType === 'Others' ? data.otherIndustryType.trim().length > 0 : true),
   (data) => data.companyLandline.trim().length > 0,
   (data) => data.companyAddress.trim().length > 0,
   (data) => data.companyEmail.trim().length > 0,
@@ -244,6 +257,9 @@ export function RegistrationPage() {
       if (name === 'vehicleType' && value !== 'Other') {
         newData.otherVehicleType = '';
       }
+      if (name === 'industryType' && value !== 'Others') {
+        newData.otherIndustryType = '';
+      }
       return newData;
     });
 
@@ -258,6 +274,9 @@ export function RegistrationPage() {
     }
     if (name === 'vehicleType' && value !== 'Other' && errors.otherVehicleType) {
       setErrors((prev) => ({ ...prev, otherVehicleType: undefined }));
+    }
+    if (name === 'industryType' && value !== 'Others' && errors.otherIndustryType) {
+      setErrors((prev) => ({ ...prev, otherIndustryType: undefined }));
     }
     if (
       name === 'hasAdditionalAttendees'
@@ -364,7 +383,14 @@ export function RegistrationPage() {
     } else if (!['government', 'private'].includes(formData.companyCategory)) {
       newErrors.companyCategory = 'Company category must be Government or Private';
     }
-    if (!formData.industryType) newErrors.industryType = 'Industry Type is required';
+    if (!formData.industryType) {
+      newErrors.industryType = 'Industry Type is required';
+    } else if (!INDUSTRY_TYPE_OPTIONS.includes(formData.industryType as (typeof INDUSTRY_TYPE_OPTIONS)[number])) {
+      newErrors.industryType = 'Please select a valid industry type';
+    }
+    if (formData.industryType === 'Others' && !formData.otherIndustryType.trim()) {
+      newErrors.otherIndustryType = 'Please specify your industry type';
+    }
     if (!formData.companyLandline) newErrors.companyLandline = 'Company Landline No. is required';
     if (!formData.companyAddress) newErrors.companyAddress = 'Company Office Address is required';
     if (!formData.companyEmail) {
@@ -479,9 +505,19 @@ export function RegistrationPage() {
     setSubmitError('');
 
     try {
-      const { hasVehicle, otherVehicleType, attendeeDetails, ...submissionData } = formData;
+      const {
+        hasVehicle,
+        otherVehicleType,
+        otherIndustryType,
+        attendeeDetails,
+        ...submissionData
+      } = formData;
       const payload = {
         ...submissionData,
+        industryType:
+          formData.industryType === 'Others'
+            ? otherIndustryType.trim()
+            : formData.industryType,
         personalEmail: formData.email.trim(),
         linkedinAccount: formData.linkedinAccount.trim(),
         facebookAccount: formData.facebookAccount.trim(),
@@ -1062,14 +1098,37 @@ export function RegistrationPage() {
                 required
                 className="md:col-span-2"
               />
-              <FormField
-                label="Industry Type"
-                name="industryType"
-                value={formData.industryType}
-                onChange={handleChange}
-                error={errors.industryType}
-                required
-              />
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="industryType" className="form-label flex items-center gap-1">
+                  Industry Type
+                  <span className="text-[#c05b5b]">*</span>
+                </label>
+                <select
+                  id="industryType"
+                  name="industryType"
+                  value={formData.industryType}
+                  onChange={handleChange}
+                  className={`form-input form-select-themed ${errors.industryType ? 'form-input-error' : ''}`}
+                >
+                  <option value="">Select Industry Type</option>
+                  {INDUSTRY_TYPE_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                {errors.industryType && <span className="text-xs text-[#b64a4a]">{errors.industryType}</span>}
+              </div>
+              {formData.industryType === 'Others' && (
+                <FormField
+                  label="Please specify"
+                  name="otherIndustryType"
+                  value={formData.otherIndustryType}
+                  onChange={handleChange}
+                  error={errors.otherIndustryType}
+                  required
+                />
+              )}
               <FormField
                 label="Company Landline No."
                 name="companyLandline"
