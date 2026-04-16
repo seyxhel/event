@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Download,
   Eye,
-  FileText,
   Filter,
   Search,
   Users,
@@ -60,8 +59,7 @@ type PaginationMeta = {
 };
 
 const LIST_API = apiUrl('/api/manage/registrations/');
-const CSV_EXPORT_URL = apiUrl('/api/manage/export/csv/');
-const PDF_EXPORT_URL = apiUrl('/api/manage/export/pdf/');
+const XLSX_EXPORT_URL = apiUrl('/api/manage/export/xlsx/?theme=mint');
 
 export function ManagePage() {
   const [rows, setRows] = useState<RegistrationRow[]>([]);
@@ -184,18 +182,11 @@ export function ManagePage() {
 
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row print:hidden">
               <a
-                href={CSV_EXPORT_URL}
+                href={XLSX_EXPORT_URL}
                 className="secondary-btn inline-flex items-center justify-center gap-2 px-4 py-2 text-xs sm:text-sm"
               >
                 <Download className="h-4 w-4" />
-                Export CSV
-              </a>
-              <a
-                href={PDF_EXPORT_URL}
-                className="secondary-btn inline-flex items-center justify-center gap-2 px-4 py-2 text-xs sm:text-sm"
-              >
-                <FileText className="h-4 w-4" />
-                Export PDF
+                Export XLSX
               </a>
             </div>
           </div>
@@ -211,13 +202,14 @@ export function ManagePage() {
           <div className="border-b border-[#cadbcf]/90 p-3 sm:p-4">
             <form onSubmit={handleSearchSubmit} className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
               <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6f8b7d]" />
+                <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6f8b7d]" />
                 <input
                   type="text"
                   placeholder="Search name, email, company..."
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
-                  className="form-input pl-10"
+                  className="form-input"
+                  style={{ paddingLeft: '3rem' }}
                 />
               </div>
 
