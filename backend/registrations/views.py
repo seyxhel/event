@@ -42,7 +42,11 @@ def _serialize_registration(registration: EventRegistration):
 		'viberNo': registration.viber_no,
 		'gcashNo': registration.gcash_no,
 		'personalEmail': registration.personal_email_address,
+		'linkedinAccount': registration.linkedin_account,
+		'facebookAccount': registration.facebook_account,
+		'messengerAccount': registration.messenger_account,
 		'companyName': registration.company_name,
+		'companyCategory': registration.company_category,
 		'industryType': registration.industry_type,
 		'companyAddress': registration.company_office_address,
 		'companyLandline': registration.company_landline_no,
@@ -80,8 +84,12 @@ def _map_payload(payload):
 		'mobile_cp_no': payload.get('mobileNo', ''),
 		'viber_no': payload.get('viberNo', ''),
 		'gcash_no': payload.get('gcashNo', ''),
-		'personal_email_address': payload.get('personalEmail', ''),
+		'personal_email_address': payload.get('personalEmail') or payload.get('email', ''),
+		'linkedin_account': payload.get('linkedinAccount', ''),
+		'facebook_account': payload.get('facebookAccount', ''),
+		'messenger_account': payload.get('messengerAccount', ''),
 		'company_name': payload.get('companyName', ''),
+		'company_category': payload.get('companyCategory', ''),
 		'industry_type': payload.get('industryType', ''),
 		'company_office_address': payload.get('companyAddress', ''),
 		'company_landline_no': payload.get('companyLandline', ''),
@@ -209,7 +217,11 @@ def export_registrations_csv(request):
 		'Viber No.',
 		'G-Cash No.',
 		'Personal Email',
+		'LinkedIn Account',
+		'Facebook Account',
+		'Messenger Account',
 		'Company Name',
+		'Company Category',
 		'Industry Type',
 		'Company Office Address',
 		'Company Landline No.',
@@ -234,7 +246,11 @@ def export_registrations_csv(request):
 			row.viber_no,
 			row.gcash_no,
 			row.personal_email_address,
+			row.linkedin_account,
+			row.facebook_account,
+			row.messenger_account,
 			row.company_name,
+			row.company_category,
 			row.industry_type,
 			row.company_office_address,
 			row.company_landline_no,
@@ -274,11 +290,12 @@ def export_registrations_pdf(request):
 		pdf.drawString(40, y, f'{_format_reference(row)} | {row.last_name}, {row.first_name}')
 		y -= 14
 		pdf.setFont('Helvetica', 9)
-		line_1 = f'Company: {row.company_name} | Designation: {row.designation}'
+		line_1 = f'Company: {row.company_name} ({row.company_category}) | Designation: {row.designation}'
 		line_2 = f'Email: {row.email} | Mobile: {row.mobile_cp_no} | Submitted: {row.created_at.strftime("%Y-%m-%d %H:%M")}'
+		line_3 = f'LinkedIn: {row.linkedin_account or "-"} | Facebook: {row.facebook_account or "-"}'
 		additional_count = len(row.additional_attendees or [])
-		line_3 = f'Vehicle: {row.vehicle_type} | Will Come: {"Yes" if row.will_come else "No"} | Count: {row.attendee_count} | Additional: {additional_count}'
-		line_4 = f'Company ID: {"Yes" if row.company_id_to_bring else "No"}'
+		line_4 = f'Messenger: {row.messenger_account or "-"} | Vehicle: {row.vehicle_type} | Will Come: {"Yes" if row.will_come else "No"} | Count: {row.attendee_count} | Additional: {additional_count}'
+		line_5 = f'Company ID: {"Yes" if row.company_id_to_bring else "No"}'
 		pdf.drawString(50, y, line_1[:120])
 		y -= 12
 		pdf.drawString(50, y, line_2[:120])
@@ -286,6 +303,8 @@ def export_registrations_pdf(request):
 		pdf.drawString(50, y, line_3[:120])
 		y -= 12
 		pdf.drawString(50, y, line_4[:120])
+		y -= 12
+		pdf.drawString(50, y, line_5[:120])
 		y -= 18
 
 	pdf.save()
