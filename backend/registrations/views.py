@@ -1,17 +1,83 @@
-import csv
 import io
 import json
 from datetime import datetime
 
 from django.db.models import Q
-from django.http import FileResponse, HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 
 from .forms import EventRegistrationForm
 from .models import EventRegistration
+
+
+XLSX_EXPORT_CONFIG = json.loads(
+	"""
+	{
+	  "sheetName": "Registrations",
+	  "header": {
+		"height": 26,
+		"font": {"name": "Calibri", "size": 11, "bold": true, "color": "FFFFFF"},
+		"alignment": {"horizontal": "left", "vertical": "center", "wrapText": true, "indent": 0}
+	  },
+	  "rows": {
+		"height": 22,
+		"font": {"name": "Calibri", "size": 10, "bold": false, "color": "1F4736"},
+		"alignment": {"horizontal": "left", "vertical": "top", "wrapText": true, "indent": 1}
+	  },
+	  "columns": [
+		{"header": "Reference", "key": "reference", "width": 22},
+		{"header": "Email", "key": "email", "width": 30},
+		{"header": "Last Name", "key": "last_name", "width": 18},
+		{"header": "First Name", "key": "first_name", "width": 18},
+		{"header": "Middle Initial", "key": "middle_initial", "width": 14},
+		{"header": "Designation", "key": "designation", "width": 24},
+		{"header": "Mobile/CP No.", "key": "mobile_cp_no", "width": 16},
+		{"header": "Viber No.", "key": "viber_no", "width": 16},
+		{"header": "G-Cash No.", "key": "gcash_no", "width": 16},
+		{"header": "Personal Email", "key": "personal_email_address", "width": 30},
+		{"header": "LinkedIn Account", "key": "linkedin_account", "width": 28},
+		{"header": "Facebook Account", "key": "facebook_account", "width": 28},
+		{"header": "Messenger Account", "key": "messenger_account", "width": 28},
+		{"header": "Company Name", "key": "company_name", "width": 28},
+		{"header": "Company Category", "key": "company_category", "width": 18},
+		{"header": "Industry Type", "key": "industry_type", "width": 22},
+		{"header": "Company Office Address", "key": "company_office_address", "width": 34},
+		{"header": "Company Landline No.", "key": "company_landline_no", "width": 18},
+		{"header": "Company Email", "key": "company_email_address", "width": 30},
+		{"header": "Company ID To Bring", "key": "company_id_to_bring", "width": 18},
+		{"header": "Vehicle Type", "key": "vehicle_type", "width": 18},
+		{"header": "Will Come", "key": "will_come", "width": 12},
+		{"header": "Attendee Count", "key": "attendee_count", "width": 14},
+		{"header": "Additional Attendees", "key": "additional_attendees", "width": 30},
+		{"header": "Submitted At", "key": "submitted_at", "width": 22}
+	  ],
+	  "themes": {
+		"mint": {
+		  "headerFill": "3F8657",
+		  "oddRowFill": "F6FBF8",
+		  "evenRowFill": "ECF5EF",
+		  "border": "BFD3C5"
+		},
+		"gold": {
+		  "headerFill": "B9923D",
+		  "oddRowFill": "FFF8EC",
+		  "evenRowFill": "FFF3DE",
+		  "border": "E4D1A4"
+		},
+		"blue": {
+		  "headerFill": "3E7BA6",
+		  "oddRowFill": "F2F7FC",
+		  "evenRowFill": "EAF2F9",
+		  "border": "BFD2E0"
+		}
+	  }
+	}
+	"""
+)
 
 
 def _with_cors_headers(response: JsonResponse) -> JsonResponse:
@@ -99,6 +165,36 @@ def _map_payload(payload):
 		'will_come': True,
 		'attendee_count': 1,
 		'additional_attendees': [],
+	}
+
+
+def _build_export_row(registration: EventRegistration):
+	return {
+		'reference': _format_reference(registration),
+		'email': registration.email,
+		'last_name': registration.last_name,
+		'first_name': registration.first_name,
+		'middle_initial': registration.middle_initial,
+		'designation': registration.designation,
+		'mobile_cp_no': registration.mobile_cp_no,
+		'viber_no': registration.viber_no,
+		'gcash_no': registration.gcash_no,
+		'personal_email_address': registration.personal_email_address,
+		'linkedin_account': registration.linkedin_account,
+		'facebook_account': registration.facebook_account,
+		'messenger_account': registration.messenger_account,
+		'company_name': registration.company_name,
+		'company_category': registration.company_category,
+		'industry_type': registration.industry_type,
+		'company_office_address': registration.company_office_address,
+		'company_landline_no': registration.company_landline_no,
+		'company_email_address': registration.company_email_address,
+		'company_id_to_bring': 'Yes' if registration.company_id_to_bring else 'No',
+		'vehicle_type': registration.vehicle_type,
+		'will_come': 'Yes' if registration.will_come else 'No',
+		'attendee_count': registration.attendee_count,
+		'additional_attendees': json.dumps(registration.additional_attendees, ensure_ascii=True),
+		'submitted_at': registration.created_at.strftime('%Y-%m-%d %H:%M:%S'),
 	}
 
 
@@ -201,112 +297,80 @@ def manage_registrations_api(request):
 
 
 @require_http_methods(['GET'])
-def export_registrations_csv(request):
-	response = HttpResponse(content_type='text/csv')
-	response['Content-Disposition'] = 'attachment; filename="event_registrations.csv"'
+def export_registrations_xlsx(request):
+	theme_key = request.GET.get('theme', 'mint').strip().lower()
+	themes = XLSX_EXPORT_CONFIG.get('themes', {})
+	theme = themes.get(theme_key, themes.get('mint', {}))
+	columns = XLSX_EXPORT_CONFIG.get('columns', [])
+	header_config = XLSX_EXPORT_CONFIG.get('header', {})
+	row_config = XLSX_EXPORT_CONFIG.get('rows', {})
 
-	writer = csv.writer(response)
-	writer.writerow([
-		'Reference',
-		'Email',
-		'Last Name',
-		'First Name',
-		'Middle Initial',
-		'Designation',
-		'Mobile/CP No.',
-		'Viber No.',
-		'G-Cash No.',
-		'Personal Email',
-		'LinkedIn Account',
-		'Facebook Account',
-		'Messenger Account',
-		'Company Name',
-		'Company Category',
-		'Industry Type',
-		'Company Office Address',
-		'Company Landline No.',
-		'Company Email',
-		'Company ID To Bring',
-		'Vehicle Type',
-		'Will Come',
-		'Attendee Count',
-		'Additional Attendees',
-		'Submitted At',
-	])
+	header_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('headerFill', '3F8657')}")
+	odd_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('oddRowFill', 'F6FBF8')}")
+	even_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('evenRowFill', 'ECF5EF')}")
+	border_side = Side(style='thin', color=f"FF{theme.get('border', 'BFD3C5')}")
+	cell_border = Border(left=border_side, right=border_side, top=border_side, bottom=border_side)
 
-	for row in EventRegistration.objects.all():
-		writer.writerow([
-			_format_reference(row),
-			row.email,
-			row.last_name,
-			row.first_name,
-			row.middle_initial,
-			row.designation,
-			row.mobile_cp_no,
-			row.viber_no,
-			row.gcash_no,
-			row.personal_email_address,
-			row.linkedin_account,
-			row.facebook_account,
-			row.messenger_account,
-			row.company_name,
-			row.company_category,
-			row.industry_type,
-			row.company_office_address,
-			row.company_landline_no,
-			row.company_email_address,
-			'Yes' if row.company_id_to_bring else 'No',
-			row.vehicle_type,
-			'Yes' if row.will_come else 'No',
-			row.attendee_count,
-			json.dumps(row.additional_attendees, ensure_ascii=True),
-			row.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-		])
+	header_font = Font(
+		name=header_config.get('font', {}).get('name', 'Calibri'),
+		size=header_config.get('font', {}).get('size', 11),
+		bold=header_config.get('font', {}).get('bold', True),
+		color=f"FF{header_config.get('font', {}).get('color', 'FFFFFF')}",
+	)
+	data_font = Font(
+		name=row_config.get('font', {}).get('name', 'Calibri'),
+		size=row_config.get('font', {}).get('size', 10),
+		bold=row_config.get('font', {}).get('bold', False),
+		color=f"FF{row_config.get('font', {}).get('color', '1F4736')}",
+	)
 
-	return response
+	header_alignment = Alignment(
+		horizontal=header_config.get('alignment', {}).get('horizontal', 'left'),
+		vertical=header_config.get('alignment', {}).get('vertical', 'center'),
+		wrap_text=header_config.get('alignment', {}).get('wrapText', True),
+		indent=header_config.get('alignment', {}).get('indent', 0),
+	)
+	data_alignment = Alignment(
+		horizontal=row_config.get('alignment', {}).get('horizontal', 'left'),
+		vertical=row_config.get('alignment', {}).get('vertical', 'top'),
+		wrap_text=row_config.get('alignment', {}).get('wrapText', True),
+		indent=row_config.get('alignment', {}).get('indent', 1),
+	)
 
+	workbook = Workbook()
+	sheet = workbook.active
+	sheet.title = XLSX_EXPORT_CONFIG.get('sheetName', 'Registrations')
+	sheet.freeze_panes = 'A2'
+	sheet.row_dimensions[1].height = header_config.get('height', 26)
 
-@require_http_methods(['GET'])
-def export_registrations_pdf(request):
+	for index, column in enumerate(columns, start=1):
+		cell = sheet.cell(row=1, column=index, value=column.get('header', ''))
+		cell.fill = header_fill
+		cell.font = header_font
+		cell.alignment = header_alignment
+		cell.border = cell_border
+		sheet.column_dimensions[get_column_letter(index)].width = column.get('width', 18)
+
+	for row_index, registration in enumerate(EventRegistration.objects.all(), start=2):
+		sheet.row_dimensions[row_index].height = row_config.get('height', 22)
+		export_row = _build_export_row(registration)
+		row_fill = odd_fill if row_index % 2 == 0 else even_fill
+
+		for column_index, column in enumerate(columns, start=1):
+			value = export_row.get(column.get('key', ''), '')
+			cell = sheet.cell(row=row_index, column=column_index, value=value)
+			cell.fill = row_fill
+			cell.font = data_font
+			cell.alignment = data_alignment
+			cell.border = cell_border
+
 	buffer = io.BytesIO()
-	pdf = canvas.Canvas(buffer, pagesize=A4)
-	width, height = A4
-
-	pdf.setFont('Helvetica-Bold', 14)
-	pdf.drawString(40, height - 40, 'Maptech Event Registrations')
-	pdf.setFont('Helvetica', 10)
-	pdf.drawString(40, height - 58, 'The Cybersecurity Implementation Journey')
-
-	y = height - 90
-	for row in EventRegistration.objects.all():
-		if y < 70:
-			pdf.showPage()
-			y = height - 50
-			pdf.setFont('Helvetica-Bold', 12)
-			pdf.drawString(40, y, 'Maptech Event Registrations (cont.)')
-			y -= 24
-
-		pdf.setFont('Helvetica-Bold', 10)
-		pdf.drawString(40, y, f'{_format_reference(row)} | {row.last_name}, {row.first_name}')
-		y -= 14
-		pdf.setFont('Helvetica', 9)
-		line_1 = f'Company: {row.company_name} ({row.company_category}) | Designation: {row.designation}'
-		line_2 = f'Email: {row.email} | Mobile: {row.mobile_cp_no} | Submitted: {row.created_at.strftime("%Y-%m-%d %H:%M")}'
-		line_3 = f'LinkedIn: {row.linkedin_account or "-"} | Facebook: {row.facebook_account or "-"}'
-		additional_count = len(row.additional_attendees or [])
-		line_4 = f'Messenger: {row.messenger_account or "-"} | Vehicle: {row.vehicle_type} | Will Come: {"Yes" if row.will_come else "No"} | Count: {row.attendee_count} | Additional: {additional_count}'
-		line_5 = f'Company ID: {"Yes" if row.company_id_to_bring else "No"}'
-		pdf.drawString(50, y, line_1[:120])
-		y -= 12
-		pdf.drawString(50, y, line_2[:120])
-		y -= 12
-		pdf.drawString(50, y, line_3[:120])
-		y -= 12
-		pdf.drawString(50, y, line_4[:120])
-		y -= 12
-		pdf.drawString(50, y, line_5[:120])
-		y -= 18
-
-	pdf.save()
+	workbook.save(buffer)
 	buffer.seek(0)
-	return FileResponse(buffer, as_attachment=True, filename='event_registrations.pdf')
+
+	response = HttpResponse(
+		buffer.getvalue(),
+		content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+	)
+	response['Content-Disposition'] = 'attachment; filename="event_registrations.xlsx"'
+	return response
