@@ -173,7 +173,7 @@ export function ManagePage() {
             <div>
               <p className="meta-badge inline-flex">Admin Console</p>
               <h1 className="display-font mt-3 text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
-                Erice Management
+                Registration Management
               </h1>
               <p className="mt-2 text-sm text-[#5f7568] md:text-base">
                 Track registrations, review attendee details, and export event records.
