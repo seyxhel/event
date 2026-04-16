@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Copy,
   Cpu,
+  Download,
   Hash,
   Mail,
   Network,
@@ -44,8 +45,11 @@ const HERO_HIGHLIGHTS: Array<{
 
 export function SuccessPage() {
   const location = useLocation();
+  const receiptRef = useRef<HTMLElement | null>(null);
   const [currentDate, setCurrentDate] = useState('');
   const [copied, setCopied] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const state = (location.state as {
     firstName?: string;
@@ -91,6 +95,92 @@ export function SuccessPage() {
       setCopied(true);
     } catch {
       setCopied(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    if (!receiptRef.current || isExportingPdf) {
+      return;
+    }
+
+    setPdfError(null);
+    setIsExportingPdf(true);
+
+    try {
+      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+
+      const canvas = await html2canvas(receiptRef.current, {
+        backgroundColor: '#ffffff',
+        scale: Math.min(2, window.devicePixelRatio || 1.5),
+        useCORS: true,
+        logging: false,
+      });
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imageData = canvas.toDataURL('image/png');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const maxWidth = pageWidth - margin * 2;
+      const maxHeight = pageHeight - margin * 2;
+      const imageHeight = (canvas.height * maxWidth) / canvas.width;
+
+      if (imageHeight <= maxHeight) {
+        pdf.addImage(imageData, 'PNG', margin, margin, maxWidth, imageHeight, undefined, 'FAST');
+      } else {
+        const sliceCanvas = document.createElement('canvas');
+        const sliceContext = sliceCanvas.getContext('2d');
+        if (!sliceContext) {
+          throw new Error('Unable to prepare PDF canvas slices.');
+        }
+
+        const pxPerMm = canvas.width / maxWidth;
+        const sliceHeightPx = Math.floor(maxHeight * pxPerMm);
+        sliceCanvas.width = canvas.width;
+
+        let renderedPx = 0;
+        while (renderedPx < canvas.height) {
+          const currentSliceHeight = Math.min(sliceHeightPx, canvas.height - renderedPx);
+          sliceCanvas.height = currentSliceHeight;
+          sliceContext.clearRect(0, 0, sliceCanvas.width, currentSliceHeight);
+          sliceContext.drawImage(
+            canvas,
+            0,
+            renderedPx,
+            canvas.width,
+            currentSliceHeight,
+            0,
+            0,
+            canvas.width,
+            currentSliceHeight
+          );
+
+          const sliceData = sliceCanvas.toDataURL('image/png');
+          const renderedHeightMm = currentSliceHeight / pxPerMm;
+          pdf.addImage(sliceData, 'PNG', margin, margin, maxWidth, renderedHeightMm, undefined, 'FAST');
+
+          renderedPx += currentSliceHeight;
+          if (renderedPx < canvas.height) {
+            pdf.addPage();
+          }
+        }
+      }
+
+      const safeRef = refNumber.replace(/[^a-zA-Z0-9_-]+/g, '-');
+      pdf.save(`registration-${safeRef}.pdf`);
+    } catch (error) {
+      console.error(error);
+      setPdfError('Unable to export PDF right now. Please try again.');
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -179,6 +269,7 @@ export function SuccessPage() {
 
       <div className="relative z-10 mx-auto mt-5 max-w-4xl px-3 sm:mt-6 sm:px-6 lg:px-8">
         <motion.section
+          ref={receiptRef}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38 }}
@@ -186,14 +277,43 @@ export function SuccessPage() {
         >
           <div className="pointer-events-none absolute left-0 top-0 h-1.5 w-full bg-gradient-to-r from-[#b9923d] via-[#3f8657] to-[#b9923d]" />
 
-          <div className="mb-6 flex flex-col items-center text-center sm:mb-8">
-            <CheckCircle2 className="soft-float mb-4 h-16 w-16 text-[#3f8657] sm:h-20 sm:w-20" />
-            <h1 className="display-font text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
-              Registration Successful
-            </h1>
-            <p className="mt-3 max-w-xl text-sm text-[#5f7568] md:text-base">
+          <button
+            type="button"
+            onClick={handleExportPdf}
+            disabled={isExportingPdf}
+            data-html2canvas-ignore="true"
+            className="primary-btn absolute right-3 top-3 hidden items-center gap-2 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex sm:right-7 sm:top-6 md:right-8 md:top-7"
+          >
+            <Download className="h-4 w-4" />
+            {isExportingPdf ? 'Downloading...' : 'Download Copy'}
+          </button>
+
+          <div className="mb-6 sm:mb-8">
+            <CheckCircle2 className="soft-float mx-auto mb-4 h-16 w-16 text-[#3f8657] sm:h-20 sm:w-20" />
+            <div className="mx-auto w-full max-w-3xl">
+              <h1 className="display-font text-center text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
+                Registration Successful
+              </h1>
+            </div>
+            <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[#5f7568] md:text-base">
               Thank you for registering for {EVENT_DETAILS.title}: {EVENT_DETAILS.subtitle}.
             </p>
+            <div className="mt-4 flex justify-center sm:hidden" data-html2canvas-ignore="true">
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                disabled={isExportingPdf}
+                className="primary-btn inline-flex items-center gap-2 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <Download className="h-4 w-4" />
+                {isExportingPdf ? 'Downloading...' : 'Download Copy'}
+              </button>
+            </div>
+            {pdfError && (
+              <p className="mt-2 text-center text-xs text-[#b64a4a]" data-html2canvas-ignore="true">
+                {pdfError}
+              </p>
+            )}
           </div>
 
           <article className="glass-panel-soft rounded-xl p-4 sm:p-5 md:p-6">
@@ -263,7 +383,7 @@ export function SuccessPage() {
               </li>
               <li className="flex items-start gap-2">
                 <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
-                Take a screenshot of this successful registration page and present it at the entrance.
+                Take a screenshot or download a copy of this successful registration page and present it at the entrance.
               </li>
             </ul>
           </motion.article>
