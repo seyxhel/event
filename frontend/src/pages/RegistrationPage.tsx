@@ -228,9 +228,9 @@ export function RegistrationPage() {
     }
     if (!formData.companyName) newErrors.companyName = 'Company Name is required';
     if (!formData.companyCategory) {
-      newErrors.companyCategory = 'Please select whether your company is Government or Private';
+      newErrors.companyCategory = 'Please select whether your company is Public Sector or Private Sector';
     } else if (!['government', 'private'].includes(formData.companyCategory)) {
-      newErrors.companyCategory = 'Company category must be Government or Private';
+      newErrors.companyCategory = 'Company category must be Public Sector or Private Sector';
     }
     if (!formData.industryType) {
       newErrors.industryType = 'Industry Type is required';
@@ -710,7 +710,7 @@ export function RegistrationPage() {
                       onChange={handleChange}
                       className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
                     />
-                    Government
+                    Public Sector
                   </label>
 
                   <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
@@ -722,7 +722,7 @@ export function RegistrationPage() {
                       onChange={handleChange}
                       className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
                     />
-                    Private
+                    Private Sector
                   </label>
                 </div>
 
