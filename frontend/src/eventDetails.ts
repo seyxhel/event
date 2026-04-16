@@ -23,6 +23,5 @@ export type EventContact = {
 export const EVENT_CONTACTS: EventContact[] = [
   { name: 'Ms. Prud De Leon', phone: '0956-396-1012' },
   { name: 'Mr. Edar Bernardo', phone: '0999-227-9291' },
-  { name: 'Mr. Ralph Rivera', phone: '0917-182-8320' },
-  { name: 'Mr. Daniel Castillo', phone: '0917-148-2857' }
+  { name: 'Ms. Katrina Fabi', phone: '0917-148-2857' }
 ];

@@ -52,6 +52,7 @@ def _serialize_registration(registration: EventRegistration):
 		'vehicleType': registration.vehicle_type,
 		'willCome': registration.will_come,
 		'attendeeCount': registration.attendee_count,
+		'attendeeDetails': registration.additional_attendees,
 		'createdAt': registration.created_at.isoformat(),
 		'date': registration.created_at.isoformat(),
 	}
@@ -87,8 +88,9 @@ def _map_payload(payload):
 		'company_email_address': payload.get('companyEmail', ''),
 		'company_id_to_bring': payload.get('companyIdToBring'),
 		'vehicle_type': payload.get('vehicleType', ''),
-		'will_come': payload.get('willCome'),
+		'will_come': payload.get('willCome', (payload.get('attendeeCount', 0) or 0) > 0),
 		'attendee_count': payload.get('attendeeCount', 0),
+		'additional_attendees': payload.get('attendeeDetails', []),
 	}
 
 
@@ -216,6 +218,7 @@ def export_registrations_csv(request):
 		'Vehicle Type',
 		'Will Come',
 		'Attendee Count',
+		'Additional Attendees',
 		'Submitted At',
 	])
 
@@ -240,6 +243,7 @@ def export_registrations_csv(request):
 			row.vehicle_type,
 			'Yes' if row.will_come else 'No',
 			row.attendee_count,
+			json.dumps(row.additional_attendees, ensure_ascii=True),
 			row.created_at.strftime('%Y-%m-%d %H:%M:%S'),
 		])
 
@@ -272,12 +276,16 @@ def export_registrations_pdf(request):
 		pdf.setFont('Helvetica', 9)
 		line_1 = f'Company: {row.company_name} | Designation: {row.designation}'
 		line_2 = f'Email: {row.email} | Mobile: {row.mobile_cp_no} | Submitted: {row.created_at.strftime("%Y-%m-%d %H:%M")}'
-		line_3 = f'Vehicle: {row.vehicle_type} | Will Come: {"Yes" if row.will_come else "No"} | Count: {row.attendee_count} | Company ID: {"Yes" if row.company_id_to_bring else "No"}'
+		additional_count = len(row.additional_attendees or [])
+		line_3 = f'Vehicle: {row.vehicle_type} | Will Come: {"Yes" if row.will_come else "No"} | Count: {row.attendee_count} | Additional: {additional_count}'
+		line_4 = f'Company ID: {"Yes" if row.company_id_to_bring else "No"}'
 		pdf.drawString(50, y, line_1[:120])
 		y -= 12
 		pdf.drawString(50, y, line_2[:120])
 		y -= 12
 		pdf.drawString(50, y, line_3[:120])
+		y -= 12
+		pdf.drawString(50, y, line_4[:120])
 		y -= 18
 
 	pdf.save()

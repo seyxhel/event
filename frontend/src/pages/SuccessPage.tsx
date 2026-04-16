@@ -196,19 +196,6 @@ export function SuccessPage() {
             </p>
           </div>
 
-          <motion.article
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12, duration: 0.32 }}
-            className="glass-panel-soft hover-lift mb-6 flex flex-col items-center rounded-xl p-4 text-center sm:mb-7 sm:p-5"
-          >
-            <Camera className="mb-2 h-8 w-8 text-[#b9923d]" />
-            <h2 className="display-font text-xl text-[#214736] sm:text-2xl">Important Next Step</h2>
-            <p className="mt-2 text-sm text-[#5f7568] md:text-base">
-              Please take a screenshot of this page and present it at the entrance.
-            </p>
-          </motion.article>
-
           <article className="glass-panel-soft rounded-xl p-4 sm:p-5 md:p-6">
             <h3 className="form-label mb-4">Registration Details</h3>
 
@@ -257,6 +244,29 @@ export function SuccessPage() {
               />
             </div>
           </article>
+
+          <motion.article
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12, duration: 0.32 }}
+            className="glass-panel-soft hover-lift mt-6 rounded-xl border border-[#e0c27a] bg-[#fff7e8] p-4 sm:mt-7 sm:p-5"
+          >
+            <h2 className="display-font text-xl text-[#7b5a1b] sm:text-2xl">Important Notes</h2>
+            <ul className="mt-3 space-y-2 text-left text-sm text-[#6e5320] md:text-base">
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                Bring either your Company ID or one valid ID on event day.
+              </li>
+              <li className="flex items-start gap-2">
+                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                Please keep your email confirmation as proof of registration.
+              </li>
+              <li className="flex items-start gap-2">
+                <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                Take a screenshot of this successful registration page and present it at the entrance.
+              </li>
+            </ul>
+          </motion.article>
 
           <div className="mt-6 text-center sm:mt-8">
             <Link to="/" className="ghost-link text-sm font-semibold md:text-base">

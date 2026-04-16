@@ -5,6 +5,7 @@ import {
   AlertCircle,
   Building2,
   Car,
+  Check,
   Cpu,
   Mail,
   Network,
@@ -17,6 +18,30 @@ import { apiUrl } from '../api';
 import { EVENT_CONTACTS, EVENT_DETAILS } from '../eventDetails';
 
 const API_URL = apiUrl('/api/register/');
+
+interface AttendeeDetail {
+  email: string;
+  middleInitial: string;
+  designation: string;
+  firstName: string;
+  lastName: string;
+  mobileNo: string;
+  viberNo: string;
+  gcashNo: string;
+  personalEmail: string;
+}
+
+const createEmptyAttendee = (): AttendeeDetail => ({
+  email: '',
+  middleInitial: '',
+  designation: '',
+  firstName: '',
+  lastName: '',
+  mobileNo: '',
+  viberNo: '',
+  gcashNo: '',
+  personalEmail: ''
+});
 
 interface FormData {
   privacyAccepted: boolean;
@@ -35,9 +60,12 @@ interface FormData {
   companyLandline: string;
   companyEmail: string;
   bringCompanyId: boolean;
+  hasVehicle: boolean;
   vehicleType: string;
+  otherVehicleType: string;
   willCome: boolean;
   attendeeCount: number;
+  attendeeDetails: AttendeeDetail[];
 }
 
 const initialFormData: FormData = {
@@ -57,9 +85,12 @@ const initialFormData: FormData = {
   companyLandline: '',
   companyEmail: '',
   bringCompanyId: false,
+  hasVehicle: false,
   vehicleType: '',
-  willCome: false,
-  attendeeCount: 0
+  otherVehicleType: '',
+  willCome: true,
+  attendeeCount: 1,
+  attendeeDetails: []
 };
 
 const REQUIRED_FIELD_CHECKS: Array<(data: FormData) => boolean> = [
@@ -67,9 +98,16 @@ const REQUIRED_FIELD_CHECKS: Array<(data: FormData) => boolean> = [
   (data) => data.email.trim().length > 0,
   (data) => data.lastName.trim().length > 0,
   (data) => data.firstName.trim().length > 0,
+  (data) => data.designation.trim().length > 0,
   (data) => data.mobileNo.trim().length > 0,
+  (data) => data.gcashNo.trim().length > 0,
+  (data) => data.personalEmail.trim().length > 0,
   (data) => data.companyName.trim().length > 0,
-  (data) => !data.willCome || data.attendeeCount >= 1
+  (data) => data.industryType.trim().length > 0,
+  (data) => data.companyLandline.trim().length > 0,
+  (data) => data.companyAddress.trim().length > 0,
+  (data) => data.companyEmail.trim().length > 0,
+  (data) => data.attendeeCount >= 1
 ];
 
 const HERO_HIGHLIGHTS: Array<{
@@ -102,6 +140,9 @@ export function RegistrationPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+  const [attendeeDetailErrors, setAttendeeDetailErrors] = useState<
+    Array<Partial<Record<keyof AttendeeDetail, string>>>
+  >([]);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -127,21 +168,47 @@ export function RegistrationPage() {
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
+    const parsedAttendeeCount =
+      name === 'attendeeCount' ? Math.max(1, Number(value) || 1) : null;
 
     let nextValue = value;
     if (name === 'middleInitial') {
       nextValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 1);
+    }
+    if (name === 'mobileNo' || name === 'gcashNo') {
+      nextValue = value.replace(/\D/g, '').slice(0, 11);
     }
 
     setFormData((prev) => {
       const newData = {
         ...prev,
         [name]:
-          type === 'checkbox' ? checked : type === 'number' ? Number(value) : nextValue
+          name === 'hasVehicle'
+            ? value === 'yes'
+            : name === 'attendeeCount'
+              ? parsedAttendeeCount
+            : type === 'checkbox'
+              ? checked
+              : type === 'number'
+                ? Number(value)
+                : nextValue
       } as FormData;
 
-      if (name === 'willCome') {
-        newData.attendeeCount = checked ? 1 : 0;
+      if (name === 'attendeeCount' && parsedAttendeeCount !== null) {
+        const additionalAttendeeCount = Math.max(0, parsedAttendeeCount - 1);
+        newData.willCome = parsedAttendeeCount > 0;
+        newData.attendeeDetails = newData.attendeeDetails.slice(0, additionalAttendeeCount);
+
+        while (newData.attendeeDetails.length < additionalAttendeeCount) {
+          newData.attendeeDetails.push(createEmptyAttendee());
+        }
+      }
+      if (name === 'hasVehicle' && value === 'no') {
+        newData.vehicleType = '';
+        newData.otherVehicleType = '';
+      }
+      if (name === 'vehicleType' && value !== 'Other') {
+        newData.otherVehicleType = '';
       }
       return newData;
     });
@@ -149,10 +216,71 @@ export function RegistrationPage() {
     if (errors[name as keyof FormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
+    if (name === 'hasVehicle' && value === 'no' && errors.vehicleType) {
+      setErrors((prev) => ({ ...prev, vehicleType: undefined }));
+    }
+    if (name === 'hasVehicle' && value === 'no' && errors.otherVehicleType) {
+      setErrors((prev) => ({ ...prev, otherVehicleType: undefined }));
+    }
+    if (name === 'vehicleType' && value !== 'Other' && errors.otherVehicleType) {
+      setErrors((prev) => ({ ...prev, otherVehicleType: undefined }));
+    }
+
+    if (name === 'attendeeCount' && parsedAttendeeCount !== null) {
+      const additionalAttendeeCount = Math.max(0, parsedAttendeeCount - 1);
+      setAttendeeDetailErrors((prev) => {
+        const resized = prev.slice(0, additionalAttendeeCount);
+        while (resized.length < additionalAttendeeCount) {
+          resized.push({});
+        }
+        return resized;
+      });
+    }
+  };
+
+  const handleAttendeeDetailChange = (
+    index: number,
+    field: keyof AttendeeDetail,
+    value: string
+  ) => {
+    let nextValue = value;
+    if (field === 'middleInitial') {
+      nextValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 1);
+    }
+    if (field === 'mobileNo' || field === 'gcashNo') {
+      nextValue = value.replace(/\D/g, '').slice(0, 11);
+    }
+
+    setFormData((prev) => {
+      const nextDetails = [...prev.attendeeDetails];
+      nextDetails[index] = {
+        ...nextDetails[index],
+        [field]: nextValue
+      };
+
+      return {
+        ...prev,
+        attendeeDetails: nextDetails
+      };
+    });
+
+    setAttendeeDetailErrors((prev) => {
+      if (!prev[index]?.[field]) {
+        return prev;
+      }
+
+      const nextErrors = [...prev];
+      nextErrors[index] = {
+        ...nextErrors[index],
+        [field]: undefined
+      };
+      return nextErrors;
+    });
   };
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
+    const nextAttendeeDetailErrors: Array<Partial<Record<keyof AttendeeDetail, string>>> = [];
 
     if (!formData.privacyAccepted) {
       newErrors.privacyAccepted = 'You must accept the Data Privacy Act to proceed.';
@@ -164,14 +292,83 @@ export function RegistrationPage() {
     }
     if (!formData.lastName) newErrors.lastName = 'Last Name is required';
     if (!formData.firstName) newErrors.firstName = 'First Name is required';
+    if (!formData.designation) newErrors.designation = 'Designation / Job Title is required';
     if (!formData.mobileNo) newErrors.mobileNo = 'Mobile No. is required';
+    else if (!/^\d{11}$/.test(formData.mobileNo)) {
+      newErrors.mobileNo = 'Mobile No. must be exactly 11 digits';
+    }
+    if (!formData.gcashNo) newErrors.gcashNo = 'GCash No. is required';
+    else if (!/^\d{11}$/.test(formData.gcashNo)) {
+      newErrors.gcashNo = 'GCash No. must be exactly 11 digits';
+    }
+    if (!formData.personalEmail) {
+      newErrors.personalEmail = 'Personal Email Address is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.personalEmail)) {
+      newErrors.personalEmail = 'Invalid email format';
+    }
     if (!formData.companyName) newErrors.companyName = 'Company Name is required';
-    if (formData.willCome && formData.attendeeCount < 1) {
-      newErrors.attendeeCount = 'Attendee count must be at least 1 if you are coming';
+    if (!formData.industryType) newErrors.industryType = 'Industry Type is required';
+    if (!formData.companyLandline) newErrors.companyLandline = 'Company Landline No. is required';
+    if (!formData.companyAddress) newErrors.companyAddress = 'Company Office Address is required';
+    if (!formData.companyEmail) {
+      newErrors.companyEmail = 'Company Email Address is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.companyEmail)) {
+      newErrors.companyEmail = 'Invalid email format';
+    }
+    if (formData.attendeeCount < 1) {
+      newErrors.attendeeCount = 'Attendee count must be at least 1';
+    }
+    if (formData.hasVehicle && !formData.vehicleType.trim()) {
+      newErrors.vehicleType = 'Please select the type of vehicle you will bring';
+    }
+    if (formData.hasVehicle && formData.vehicleType === 'Other' && !formData.otherVehicleType.trim()) {
+      newErrors.otherVehicleType = 'Please specify your vehicle type';
+    }
+
+    const additionalAttendeeCount = Math.max(0, formData.attendeeCount - 1);
+    for (let index = 0; index < additionalAttendeeCount; index += 1) {
+      const attendee = formData.attendeeDetails[index] ?? createEmptyAttendee();
+      const detailErrors: Partial<Record<keyof AttendeeDetail, string>> = {};
+
+      if (!attendee.firstName.trim()) {
+        detailErrors.firstName = 'First Name is required';
+      }
+      if (!attendee.lastName.trim()) {
+        detailErrors.lastName = 'Last Name is required';
+      }
+      if (!attendee.designation.trim()) {
+        detailErrors.designation = 'Designation / Job Title is required';
+      }
+      if (!attendee.email.trim()) {
+        detailErrors.email = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(attendee.email)) {
+        detailErrors.email = 'Invalid email format';
+      }
+      if (!attendee.mobileNo.trim()) {
+        detailErrors.mobileNo = 'Mobile No. is required';
+      } else if (!/^\d{11}$/.test(attendee.mobileNo.trim())) {
+        detailErrors.mobileNo = 'Mobile No. must be exactly 11 digits';
+      }
+      if (!attendee.gcashNo.trim()) {
+        detailErrors.gcashNo = 'GCash No. is required';
+      } else if (!/^\d{11}$/.test(attendee.gcashNo.trim())) {
+        detailErrors.gcashNo = 'GCash No. must be exactly 11 digits';
+      }
+      if (!attendee.personalEmail.trim()) {
+        detailErrors.personalEmail = 'Personal Email Address is required';
+      } else if (!/\S+@\S+\.\S+/.test(attendee.personalEmail)) {
+        detailErrors.personalEmail = 'Invalid email format';
+      }
+
+      nextAttendeeDetailErrors.push(detailErrors);
     }
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setAttendeeDetailErrors(nextAttendeeDetailErrors);
+    return (
+      Object.keys(newErrors).length === 0
+      && nextAttendeeDetailErrors.every((detailErrors) => Object.keys(detailErrors).length === 0)
+    );
   };
 
   const mapServerErrors = (backendErrors: Record<string, string[]>) => {
@@ -194,7 +391,8 @@ export function RegistrationPage() {
       company_id_to_bring: 'bringCompanyId',
       vehicle_type: 'vehicleType',
       will_come: 'willCome',
-      attendee_count: 'attendeeCount'
+      attendee_count: 'attendeeCount',
+      additional_attendees: 'attendeeCount'
     };
 
     const mapped: Partial<Record<keyof FormData, string>> = {};
@@ -218,10 +416,28 @@ export function RegistrationPage() {
     setSubmitError('');
 
     try {
+      const { hasVehicle, otherVehicleType, attendeeDetails, ...submissionData } = formData;
       const payload = {
-        ...formData,
+        ...submissionData,
+        vehicleType: hasVehicle
+          ? formData.vehicleType === 'Other'
+            ? otherVehicleType.trim()
+            : formData.vehicleType.trim()
+          : '',
+        willCome: Number(formData.attendeeCount || 0) > 0,
         companyIdToBring: formData.bringCompanyId,
-        attendeeCount: Number(formData.attendeeCount || 0)
+        attendeeCount: Number(formData.attendeeCount || 1),
+        attendeeDetails: attendeeDetails.map((detail) => ({
+          email: detail.email.trim(),
+          middleInitial: detail.middleInitial.trim().toUpperCase(),
+          designation: detail.designation.trim(),
+          firstName: detail.firstName.trim(),
+          lastName: detail.lastName.trim(),
+          mobileNo: detail.mobileNo.trim(),
+          viberNo: detail.viberNo.trim(),
+          gcashNo: detail.gcashNo.trim(),
+          personalEmail: detail.personalEmail.trim()
+        }))
       };
 
       const response = await fetch(API_URL, {
@@ -266,6 +482,7 @@ export function RegistrationPage() {
     if (window.confirm('Are you sure you want to clear the form?')) {
       setFormData(initialFormData);
       setErrors({});
+      setAttendeeDetailErrors([]);
       setSubmitError('');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -392,7 +609,14 @@ export function RegistrationPage() {
               </div>
               <div className="flex items-center gap-3 text-[#2b5642]">
                 <Mail className="h-5 w-5 text-[#3f8657]" />
-                <span className="text-base font-semibold sm:text-lg">{EVENT_DETAILS.officeEmail}</span>
+                <a
+                  href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(EVENT_DETAILS.officeEmail)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-base font-semibold underline decoration-[#7aa88e] underline-offset-2 hover:text-[#1f4736] sm:text-lg"
+                >
+                  {EVENT_DETAILS.officeEmail}
+                </a>
               </div>
             </div>
           </div>
@@ -460,10 +684,20 @@ export function RegistrationPage() {
                   name="privacyAccepted"
                   checked={formData.privacyAccepted}
                   onChange={handleChange}
-                  className="peer sr-only"
+                  className="sr-only"
                 />
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[#a9c2b2] bg-[#ffffff] peer-checked:border-[#3f8657] peer-checked:bg-[#3f8657]">
-                  <ShieldCheck className="h-4 w-4 text-[#ffffff] opacity-0 transition-opacity peer-checked:opacity-100" />
+                <span
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                    formData.privacyAccepted
+                      ? 'border-[#3f8657] bg-[#3f8657]'
+                      : 'border-[#a9c2b2] bg-[#ffffff]'
+                  }`}
+                >
+                  <Check
+                    className={`h-4 w-4 transition-opacity ${
+                      formData.privacyAccepted ? 'opacity-100 text-[#ffffff]' : 'opacity-0 text-[#3f8657]'
+                    }`}
+                  />
                 </span>
                 <span className="text-sm text-[#335f49] md:text-base">
                   I agree to the collection and processing of my personal data in accordance with
@@ -479,8 +713,22 @@ export function RegistrationPage() {
               )}
             </div>
 
+            <div className="glass-panel-soft rounded-xl border border-[#bfd5c7] bg-[#f5faf6] p-3.5 sm:p-4">
+              <div className="w-full sm:max-w-[340px]">
+                <FormField
+                  label="How many attendees will attend (including you)?"
+                  name="attendeeCount"
+                  type="number"
+                  value={formData.attendeeCount.toString()}
+                  onChange={handleChange}
+                  error={errors.attendeeCount}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2">
-              <SectionTitle title="Personal Details" icon={Users} />
+              <SectionTitle title="Primary Attendee Details" icon={Users} />
               <FormField
                 label="Email Address"
                 name="email"
@@ -519,7 +767,103 @@ export function RegistrationPage() {
                 name="designation"
                 value={formData.designation}
                 onChange={handleChange}
+                error={errors.designation}
+                required
               />
+
+              {formData.attendeeCount > 1 && (
+                <SectionTitle title="Additional Attendee Details" icon={Users} className="mt-2" />
+              )}
+
+              {formData.attendeeDetails.map((attendee, index) => (
+                <React.Fragment key={`attendee-${index}`}>
+                  <div className="glass-panel-soft md:col-span-2 rounded-xl border border-[#cadbcf] bg-[#f8fcf8] px-3 py-2.5 text-sm font-semibold text-[#2f5f47]">
+                    Attendee {index + 2} - Personal Details
+                  </div>
+
+                  <FormField
+                    label="Email Address"
+                    name={`attendeeEmail-${index}`}
+                    type="email"
+                    value={attendee.email}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'email', e.target.value)}
+                    error={attendeeDetailErrors[index]?.email}
+                    required
+                    className="md:col-span-2"
+                  />
+
+                  <FormField
+                    label="Last Name"
+                    name={`attendeeLastName-${index}`}
+                    value={attendee.lastName}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'lastName', e.target.value)}
+                    error={attendeeDetailErrors[index]?.lastName}
+                    required
+                  />
+                  <FormField
+                    label="First Name"
+                    name={`attendeeFirstName-${index}`}
+                    value={attendee.firstName}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'firstName', e.target.value)}
+                    error={attendeeDetailErrors[index]?.firstName}
+                    required
+                  />
+                  <FormField
+                    label="Middle Initial"
+                    name={`attendeeMiddleInitial-${index}`}
+                    value={attendee.middleInitial}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'middleInitial', e.target.value)}
+                    maxLength={1}
+                  />
+                  <FormField
+                    label="Designation / Job Title"
+                    name={`attendeeDesignation-${index}`}
+                    value={attendee.designation}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'designation', e.target.value)}
+                    error={attendeeDetailErrors[index]?.designation}
+                    required
+                  />
+
+                  <div className="glass-panel-soft md:col-span-2 rounded-xl border border-[#cadbcf] bg-[#f8fcf8] px-3 py-2.5 text-sm font-semibold text-[#2f5f47]">
+                    Attendee {index + 2} - Contact Details
+                  </div>
+
+                  <FormField
+                    label="Mobile / Cellphone No."
+                    name={`attendeeMobileNo-${index}`}
+                    value={attendee.mobileNo}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'mobileNo', e.target.value)}
+                    error={attendeeDetailErrors[index]?.mobileNo}
+                    maxLength={11}
+                    required
+                  />
+                  <FormField
+                    label="Viber No."
+                    name={`attendeeViberNo-${index}`}
+                    value={attendee.viberNo}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'viberNo', e.target.value)}
+                  />
+                  <FormField
+                    label="GCash No. (for raffle)"
+                    name={`attendeeGcashNo-${index}`}
+                    value={attendee.gcashNo}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'gcashNo', e.target.value)}
+                    error={attendeeDetailErrors[index]?.gcashNo}
+                    maxLength={11}
+                    required
+                  />
+                  <FormField
+                    label="Personal Email Address"
+                    name={`attendeePersonalEmail-${index}`}
+                    type="email"
+                    value={attendee.personalEmail}
+                    onChange={(e) => handleAttendeeDetailChange(index, 'personalEmail', e.target.value)}
+                    error={attendeeDetailErrors[index]?.personalEmail}
+                    required
+                    className="md:col-span-2"
+                  />
+                </React.Fragment>
+              ))}
 
               <SectionTitle title="Contact Details" icon={Phone} className="mt-2" />
               <FormField
@@ -528,6 +872,7 @@ export function RegistrationPage() {
                 value={formData.mobileNo}
                 onChange={handleChange}
                 error={errors.mobileNo}
+                maxLength={11}
                 required
               />
               <FormField
@@ -541,6 +886,9 @@ export function RegistrationPage() {
                 name="gcashNo"
                 value={formData.gcashNo}
                 onChange={handleChange}
+                error={errors.gcashNo}
+                maxLength={11}
+                required
               />
               <FormField
                 label="Personal Email Address"
@@ -548,6 +896,8 @@ export function RegistrationPage() {
                 type="email"
                 value={formData.personalEmail}
                 onChange={handleChange}
+                error={errors.personalEmail}
+                required
                 className="md:col-span-2"
               />
 
@@ -566,18 +916,24 @@ export function RegistrationPage() {
                 name="industryType"
                 value={formData.industryType}
                 onChange={handleChange}
+                error={errors.industryType}
+                required
               />
               <FormField
                 label="Company Landline No."
                 name="companyLandline"
                 value={formData.companyLandline}
                 onChange={handleChange}
+                error={errors.companyLandline}
+                required
               />
               <FormField
                 label="Company Office Address"
                 name="companyAddress"
                 value={formData.companyAddress}
                 onChange={handleChange}
+                error={errors.companyAddress}
+                required
                 className="md:col-span-2"
               />
               <FormField
@@ -586,59 +942,96 @@ export function RegistrationPage() {
                 type="email"
                 value={formData.companyEmail}
                 onChange={handleChange}
+                error={errors.companyEmail}
+                required
                 className="md:col-span-2"
               />
 
               <SectionTitle title="Event Logistics" icon={Car} className="mt-2" />
 
-              <div className="glass-panel-soft md:col-span-2 p-3.5 sm:p-4">
-                <label className="flex cursor-pointer items-center gap-3 text-sm text-[#335f49] md:text-base">
-                  <input
-                    type="checkbox"
-                    id="bringCompanyId"
-                    name="bringCompanyId"
-                    checked={formData.bringCompanyId}
-                    onChange={handleChange}
-                    className="h-4 w-4 rounded border-[#9ebdae] bg-[#ffffff] text-[#3f8657] focus:ring-[#3f8657]/45"
-                  />
-                  I will bring my company ID.
-                </label>
-              </div>
+              <div className="glass-panel-soft md:col-span-2 grid gap-3 p-3.5 sm:p-4">
+                <p className="text-sm text-[#335f49] md:text-base">Will you bring a vehicle?</p>
+                <div className="flex flex-wrap gap-3">
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
+                    <input
+                      type="radio"
+                      name="hasVehicle"
+                      value="yes"
+                      checked={formData.hasVehicle}
+                      onChange={handleChange}
+                      className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
+                    />
+                    Yes
+                  </label>
 
-              <FormField
-                label="Type of vehicle to bring"
-                name="vehicleType"
-                value={formData.vehicleType}
-                onChange={handleChange}
-                placeholder="Car, motorcycle, none, etc."
-                className="md:col-span-2"
-              />
-
-              <div className="glass-panel-soft md:col-span-2 grid gap-4 p-3.5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-4">
-                <label className="flex cursor-pointer items-center gap-3 text-sm text-[#335f49] md:text-base">
-                  <input
-                    type="checkbox"
-                    id="willCome"
-                    name="willCome"
-                    checked={formData.willCome}
-                    onChange={handleChange}
-                    className="h-4 w-4 rounded border-[#9ebdae] bg-[#ffffff] text-[#3f8657] focus:ring-[#3f8657]/45"
-                  />
-                  I will attend the event.
-                </label>
-
-                <div className="w-full sm:min-w-[200px]">
-                  <FormField
-                    label="Attendee Count"
-                    name="attendeeCount"
-                    type="number"
-                    value={formData.attendeeCount.toString()}
-                    onChange={handleChange}
-                    error={errors.attendeeCount}
-                    disabled={!formData.willCome}
-                  />
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
+                    <input
+                      type="radio"
+                      name="hasVehicle"
+                      value="no"
+                      checked={!formData.hasVehicle}
+                      onChange={handleChange}
+                      className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
+                    />
+                    No
+                  </label>
                 </div>
               </div>
+
+              {formData.hasVehicle && (
+                <div className="flex flex-col gap-1.5 md:col-span-2">
+                  <p className="form-label flex items-center gap-1">
+                    What type of vehicle will you bring?
+                    <span className="text-[#c05b5b]">*</span>
+                  </p>
+
+                  <div
+                    className={`grid gap-2 sm:grid-cols-2 ${errors.vehicleType ? 'rounded-lg border border-[#d9a1a1] p-2' : ''}`}
+                  >
+                    {[
+                      { value: 'Car', label: 'Car' },
+                      { value: 'SUV/Van', label: 'SUV/Van' },
+                      { value: 'Motorcycle', label: 'Motorcycle' },
+                      { value: 'Pickup Truck', label: 'Pickup Truck' },
+                      { value: 'Other', label: 'Others' }
+                    ].map((option) => (
+                      <label
+                        key={option.value}
+                        className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors md:text-base ${
+                          formData.vehicleType === option.value
+                            ? 'border-[#3f8657] bg-[#eaf5ee] text-[#244f3b]'
+                            : 'border-[#b8d0c0] bg-[#f7fcf8] text-[#335f49]'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="vehicleType"
+                          value={option.value}
+                          checked={formData.vehicleType === option.value}
+                          onChange={handleChange}
+                          className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+
+                  {errors.vehicleType && (
+                    <span className="text-xs text-[#b64a4a]">{errors.vehicleType}</span>
+                  )}
+                </div>
+              )}
+
+              {formData.hasVehicle && formData.vehicleType === 'Other' && (
+                <FormField
+                  label="Please specify"
+                  name="otherVehicleType"
+                  value={formData.otherVehicleType}
+                  onChange={handleChange}
+                  error={errors.otherVehicleType}
+                  className="md:col-span-2"
+                />
+              )}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-[#cadbcf] pt-6 sm:flex-row sm:pt-7">
