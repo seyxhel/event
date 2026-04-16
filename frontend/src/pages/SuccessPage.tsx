@@ -46,6 +46,7 @@ const HERO_HIGHLIGHTS: Array<{
 export function SuccessPage() {
   const location = useLocation();
   const receiptRef = useRef<HTMLElement | null>(null);
+  const exportReceiptRef = useRef<HTMLElement | null>(null);
   const [currentDate, setCurrentDate] = useState('');
   const [copied, setCopied] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
@@ -99,7 +100,7 @@ export function SuccessPage() {
   };
 
   const handleExportPdf = async () => {
-    if (!receiptRef.current || isExportingPdf) {
+    if (!exportReceiptRef.current || isExportingPdf) {
       return;
     }
 
@@ -112,9 +113,9 @@ export function SuccessPage() {
         import('jspdf'),
       ]);
 
-      const canvas = await html2canvas(receiptRef.current, {
+      const canvas = await html2canvas(exportReceiptRef.current, {
         backgroundColor: '#ffffff',
-        scale: Math.min(2, window.devicePixelRatio || 1.5),
+        scale: Math.max(3, Math.ceil((window.devicePixelRatio || 1) * 2)),
         useCORS: true,
         logging: false,
       });
@@ -389,6 +390,99 @@ export function SuccessPage() {
           </motion.article>
 
         </motion.section>
+      </div>
+
+      <div className="pointer-events-none fixed left-[-10000px] top-0 w-[960px] overflow-hidden opacity-100" aria-hidden="true">
+        <section
+          ref={exportReceiptRef}
+          className="relative overflow-hidden rounded-[1rem] border border-[#cfddd2] bg-[#ffffff] p-6 text-left shadow-none"
+          style={{ color: '#214736' }}
+        >
+          <div className="absolute left-0 top-0 h-1.5 w-full bg-gradient-to-r from-[#b9923d] via-[#3f8657] to-[#b9923d]" />
+
+          <div className="mb-6 sm:mb-8">
+            <CheckCircle2 className="mx-auto mb-4 h-16 w-16 text-[#3f8657] sm:h-20 sm:w-20" />
+            <div className="mx-auto w-full max-w-3xl">
+              <h1 className="display-font text-center text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
+                Registration Successful
+              </h1>
+            </div>
+            <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[#5f7568] md:text-base">
+              Thank you for registering for {EVENT_DETAILS.title}: {EVENT_DETAILS.subtitle}.
+            </p>
+          </div>
+
+          <article className="rounded-xl border border-[#cfddd2] bg-[#ffffff] p-4 sm:p-5 md:p-6">
+            <h3 className="form-label mb-4">Registration Details</h3>
+
+            <div className="space-y-3 text-sm sm:space-y-4 md:text-base">
+              <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
+                <div className="flex items-start gap-3">
+                  <Hash className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
+                  <div>
+                    <p className="form-label text-[0.72rem] text-[#5f7568]">Reference Number</p>
+                    <p className="mt-1 break-words text-[#214736]">{refNumber}</p>
+                    <button
+                      type="button"
+                      className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[#c9d9cf] bg-[#f8fbf9] px-3 py-1.5 text-xs font-bold text-[#2f5f47]"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      Copy Ref
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
+                <div className="flex items-start gap-3">
+                  <User className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
+                  <div>
+                    <p className="form-label text-[0.72rem] text-[#5f7568]">Registrant Name</p>
+                    <p className="mt-1 break-words text-[#214736]">{fullName}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
+                <div className="flex items-start gap-3">
+                  <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
+                  <div>
+                    <p className="form-label text-[0.72rem] text-[#5f7568]">Email Address</p>
+                    <p className="mt-1 break-words text-[#214736]">{email}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
+                <div className="flex items-start gap-3">
+                  <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
+                  <div>
+                    <p className="form-label text-[0.72rem] text-[#5f7568]">Registration Date</p>
+                    <p className="mt-1 break-words text-[#214736]">{currentDate}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article className="mt-6 rounded-xl border border-[#cfddd2] bg-[#fff8ea] p-4 sm:mt-7 sm:p-5">
+            <h2 className="display-font text-xl text-[#7b5a1b] sm:text-2xl">Important Notes</h2>
+            <ul className="mt-3 space-y-2 text-left text-sm text-[#6e5320] md:text-base">
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                Bring either your Company ID or one valid ID on event day.
+              </li>
+              <li className="flex items-start gap-2">
+                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                Please keep your email confirmation as proof of registration.
+              </li>
+              <li className="flex items-start gap-2">
+                <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                Take a screenshot or download a copy of this successful registration page and present it at the entrance.
+              </li>
+            </ul>
+          </article>
+        </section>
       </div>
     </div>
   );
