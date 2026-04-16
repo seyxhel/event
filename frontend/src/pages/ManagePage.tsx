@@ -286,8 +286,6 @@ export function ManagePage() {
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Name</th>
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Company</th>
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Contact</th>
-                    <th className="px-3 py-2.5 text-center sm:px-5 sm:py-3">Attending</th>
-                    <th className="px-3 py-2.5 text-center sm:px-5 sm:py-3">Count</th>
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Date</th>
                     <th className="px-3 py-2.5 text-center sm:px-5 sm:py-3">Action</th>
                   </tr>
@@ -314,20 +312,6 @@ export function ManagePage() {
                           <p className="text-xs text-[#4f6a5d]">{reg.designation || '-'}</p>
                         </td>
                         <td className="px-3 py-2.5 text-[#305643] sm:px-5 sm:py-3">{reg.mobileNo || '-'}</td>
-                        <td className="px-3 py-2.5 text-center sm:px-5 sm:py-3">
-                          {reg.willCome ? (
-                            <span className="status-pill border-[#9cbba9] bg-[#f2f9f3] text-[#2f5f47]">
-                              Yes
-                            </span>
-                          ) : (
-                            <span className="status-pill border-[#cabba0] bg-[#fbf7ef] text-[#866a2f]">
-                              No
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2.5 text-center font-semibold text-[#1f4736] sm:px-5 sm:py-3">
-                          {reg.attendeeCount}
-                        </td>
                         <td className="px-3 py-2.5 text-[#4f6a5d] sm:px-5 sm:py-3">
                           {new Date(reg.createdAt).toLocaleDateString()}
                         </td>
@@ -346,7 +330,7 @@ export function ManagePage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={8} className="px-3 py-8 text-center text-[#5f7568] sm:px-5 sm:py-10">
+                      <td colSpan={6} className="px-3 py-8 text-center text-[#5f7568] sm:px-5 sm:py-10">
                         No registrations found.
                       </td>
                     </tr>
@@ -410,9 +394,6 @@ export function ManagePage() {
               <Detail label="Reference" value={selected.reference} />
               <Detail label="Submitted" value={new Date(selected.createdAt).toLocaleString()} />
               <Detail label="Privacy Accepted" value={selected.privacyAccepted ? 'Yes' : 'No'} />
-              <Detail label="Will Come" value={selected.willCome ? 'Yes' : 'No'} />
-              <Detail label="Attendee Count" value={String(selected.attendeeCount)} />
-              <Detail label="Company ID to Bring" value={selected.bringCompanyId ? 'Yes' : 'No'} />
               <Detail label="First Name" value={selected.firstName} />
               <Detail label="Last Name" value={selected.lastName} />
               <Detail label="Middle Initial" value={selected.middleInitial} />
