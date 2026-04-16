@@ -96,9 +96,9 @@ def _map_payload(payload):
 		'company_email_address': payload.get('companyEmail', ''),
 		'company_id_to_bring': payload.get('companyIdToBring'),
 		'vehicle_type': payload.get('vehicleType', ''),
-		'will_come': payload.get('willCome', (payload.get('attendeeCount', 0) or 0) > 0),
-		'attendee_count': payload.get('attendeeCount', 0),
-		'additional_attendees': payload.get('attendeeDetails', []),
+		'will_come': True,
+		'attendee_count': 1,
+		'additional_attendees': [],
 	}
 
 

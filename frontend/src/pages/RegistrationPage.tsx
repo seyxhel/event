@@ -29,33 +29,8 @@ const INDUSTRY_TYPE_OPTIONS = [
   'Others'
 ] as const;
 
-interface AttendeeDetail {
-  email: string;
-  middleInitial: string;
-  designation: string;
-  firstName: string;
-  lastName: string;
-  mobileNo: string;
-  viberNo: string;
-  gcashNo: string;
-  personalEmail: string;
-}
-
-const createEmptyAttendee = (): AttendeeDetail => ({
-  email: '',
-  middleInitial: '',
-  designation: '',
-  firstName: '',
-  lastName: '',
-  mobileNo: '',
-  viberNo: '',
-  gcashNo: '',
-  personalEmail: ''
-});
-
 interface FormData {
   privacyAccepted: boolean;
-  hasAdditionalAttendees: boolean | null;
   email: string;
   lastName: string;
   firstName: string;
@@ -78,14 +53,10 @@ interface FormData {
   hasVehicle: boolean;
   vehicleType: string;
   otherVehicleType: string;
-  willCome: boolean;
-  attendeeCount: number;
-  attendeeDetails: AttendeeDetail[];
 }
 
 const initialFormData: FormData = {
   privacyAccepted: false,
-  hasAdditionalAttendees: null,
   email: '',
   lastName: '',
   firstName: '',
@@ -107,15 +78,11 @@ const initialFormData: FormData = {
   bringCompanyId: false,
   hasVehicle: false,
   vehicleType: '',
-  otherVehicleType: '',
-  willCome: true,
-  attendeeCount: 1,
-  attendeeDetails: []
+  otherVehicleType: ''
 };
 
 const REQUIRED_FIELD_CHECKS: Array<(data: FormData) => boolean> = [
   (data) => data.privacyAccepted,
-  (data) => data.hasAdditionalAttendees !== null,
   (data) => data.email.trim().length > 0,
   (data) => data.lastName.trim().length > 0,
   (data) => data.firstName.trim().length > 0,
@@ -128,8 +95,7 @@ const REQUIRED_FIELD_CHECKS: Array<(data: FormData) => boolean> = [
   (data) => (data.industryType === 'Others' ? data.otherIndustryType.trim().length > 0 : true),
   (data) => data.companyLandline.trim().length > 0,
   (data) => data.companyAddress.trim().length > 0,
-  (data) => data.companyEmail.trim().length > 0,
-  (data) => (data.hasAdditionalAttendees ? data.attendeeCount >= 2 : data.attendeeCount >= 1)
+  (data) => data.companyEmail.trim().length > 0
 ];
 
 const HERO_HIGHLIGHTS: Array<{
@@ -162,9 +128,6 @@ export function RegistrationPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const [attendeeDetailErrors, setAttendeeDetailErrors] = useState<
-    Array<Partial<Record<keyof AttendeeDetail, string>>>
-  >([]);
   const [submitError, setSubmitError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -190,13 +153,6 @@ export function RegistrationPage() {
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    const parsedAdditionalAttendeesSelection =
-      name === 'hasAdditionalAttendees' ? value === 'yes' : null;
-    const attendeeCountMin = formData.hasAdditionalAttendees ? 2 : 1;
-    const parsedAttendeeCount =
-      name === 'attendeeCount'
-        ? Math.max(attendeeCountMin, Number(value) || attendeeCountMin)
-        : null;
 
     let nextValue = value;
     if (name === 'middleInitial') {
@@ -212,44 +168,12 @@ export function RegistrationPage() {
         [name]:
           name === 'hasVehicle'
             ? value === 'yes'
-            : name === 'hasAdditionalAttendees'
-              ? parsedAdditionalAttendeesSelection
-            : name === 'attendeeCount'
-              ? parsedAttendeeCount
             : type === 'checkbox'
               ? checked
               : type === 'number'
                 ? Number(value)
                 : nextValue
       } as FormData;
-
-      if (name === 'attendeeCount' && parsedAttendeeCount !== null) {
-        const additionalAttendeeCount = Math.max(0, parsedAttendeeCount - 1);
-        newData.willCome = parsedAttendeeCount > 0;
-        newData.attendeeDetails = newData.attendeeDetails.slice(0, additionalAttendeeCount);
-
-        while (newData.attendeeDetails.length < additionalAttendeeCount) {
-          newData.attendeeDetails.push(createEmptyAttendee());
-        }
-      }
-      if (name === 'hasAdditionalAttendees' && parsedAdditionalAttendeesSelection !== null) {
-        if (parsedAdditionalAttendeesSelection) {
-          const nextAttendeeCount = Math.max(2, newData.attendeeCount || 2);
-          const additionalAttendeeCount = nextAttendeeCount - 1;
-
-          newData.attendeeCount = nextAttendeeCount;
-          newData.willCome = true;
-          newData.attendeeDetails = newData.attendeeDetails.slice(0, additionalAttendeeCount);
-
-          while (newData.attendeeDetails.length < additionalAttendeeCount) {
-            newData.attendeeDetails.push(createEmptyAttendee());
-          }
-        } else {
-          newData.attendeeCount = 1;
-          newData.willCome = true;
-          newData.attendeeDetails = [];
-        }
-      }
       if (name === 'hasVehicle' && value === 'no') {
         newData.vehicleType = '';
         newData.otherVehicleType = '';
@@ -278,88 +202,13 @@ export function RegistrationPage() {
     if (name === 'industryType' && value !== 'Others' && errors.otherIndustryType) {
       setErrors((prev) => ({ ...prev, otherIndustryType: undefined }));
     }
-    if (
-      name === 'hasAdditionalAttendees'
-      && parsedAdditionalAttendeesSelection === false
-      && errors.attendeeCount
-    ) {
-      setErrors((prev) => ({ ...prev, attendeeCount: undefined }));
-    }
-
-    if (name === 'attendeeCount' && parsedAttendeeCount !== null) {
-      const additionalAttendeeCount = Math.max(0, parsedAttendeeCount - 1);
-      setAttendeeDetailErrors((prev) => {
-        const resized = prev.slice(0, additionalAttendeeCount);
-        while (resized.length < additionalAttendeeCount) {
-          resized.push({});
-        }
-        return resized;
-      });
-    }
-    if (name === 'hasAdditionalAttendees' && parsedAdditionalAttendeesSelection !== null) {
-      const additionalAttendeeCount = parsedAdditionalAttendeesSelection
-        ? Math.max(1, formData.attendeeCount - 1)
-        : 0;
-
-      setAttendeeDetailErrors((prev) => {
-        const resized = prev.slice(0, additionalAttendeeCount);
-        while (resized.length < additionalAttendeeCount) {
-          resized.push({});
-        }
-        return resized;
-      });
-    }
-  };
-
-  const handleAttendeeDetailChange = (
-    index: number,
-    field: keyof AttendeeDetail,
-    value: string
-  ) => {
-    let nextValue = value;
-    if (field === 'middleInitial') {
-      nextValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 1);
-    }
-    if (field === 'mobileNo' || field === 'gcashNo') {
-      nextValue = value.replace(/\D/g, '').slice(0, 11);
-    }
-
-    setFormData((prev) => {
-      const nextDetails = [...prev.attendeeDetails];
-      nextDetails[index] = {
-        ...nextDetails[index],
-        [field]: nextValue
-      };
-
-      return {
-        ...prev,
-        attendeeDetails: nextDetails
-      };
-    });
-
-    setAttendeeDetailErrors((prev) => {
-      if (!prev[index]?.[field]) {
-        return prev;
-      }
-
-      const nextErrors = [...prev];
-      nextErrors[index] = {
-        ...nextErrors[index],
-        [field]: undefined
-      };
-      return nextErrors;
-    });
   };
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof FormData, string>> = {};
-    const nextAttendeeDetailErrors: Array<Partial<Record<keyof AttendeeDetail, string>>> = [];
 
     if (!formData.privacyAccepted) {
       newErrors.privacyAccepted = 'You must accept the Data Privacy Act to proceed.';
-    }
-    if (formData.hasAdditionalAttendees === null) {
-      newErrors.hasAdditionalAttendees = 'Please choose Yes or No.';
     }
     if (!formData.email) {
       newErrors.email = 'Email is required';
@@ -398,11 +247,6 @@ export function RegistrationPage() {
     } else if (!/\S+@\S+\.\S+/.test(formData.companyEmail)) {
       newErrors.companyEmail = 'Invalid email format';
     }
-    if (formData.hasAdditionalAttendees && formData.attendeeCount < 2) {
-      newErrors.attendeeCount = 'Attendee count must be at least 2 when bringing additional attendees';
-    } else if (formData.attendeeCount < 1) {
-      newErrors.attendeeCount = 'Attendee count must be at least 1';
-    }
     if (formData.hasVehicle && !formData.vehicleType.trim()) {
       newErrors.vehicleType = 'Please select the type of vehicle you will bring';
     }
@@ -410,50 +254,8 @@ export function RegistrationPage() {
       newErrors.otherVehicleType = 'Please specify your vehicle type';
     }
 
-    const additionalAttendeeCount = Math.max(0, formData.attendeeCount - 1);
-    for (let index = 0; index < additionalAttendeeCount; index += 1) {
-      const attendee = formData.attendeeDetails[index] ?? createEmptyAttendee();
-      const detailErrors: Partial<Record<keyof AttendeeDetail, string>> = {};
-
-      if (!attendee.firstName.trim()) {
-        detailErrors.firstName = 'First Name is required';
-      }
-      if (!attendee.lastName.trim()) {
-        detailErrors.lastName = 'Last Name is required';
-      }
-      if (!attendee.designation.trim()) {
-        detailErrors.designation = 'Designation / Job Title is required';
-      }
-      if (!attendee.email.trim()) {
-        detailErrors.email = 'Email is required';
-      } else if (!/\S+@\S+\.\S+/.test(attendee.email)) {
-        detailErrors.email = 'Invalid email format';
-      }
-      if (!attendee.mobileNo.trim()) {
-        detailErrors.mobileNo = 'Mobile No. is required';
-      } else if (!/^\d{11}$/.test(attendee.mobileNo.trim())) {
-        detailErrors.mobileNo = 'Mobile No. must be exactly 11 digits';
-      }
-      if (!attendee.gcashNo.trim()) {
-        detailErrors.gcashNo = 'GCash No. is required';
-      } else if (!/^\d{11}$/.test(attendee.gcashNo.trim())) {
-        detailErrors.gcashNo = 'GCash No. must be exactly 11 digits';
-      }
-      if (!attendee.personalEmail.trim()) {
-        detailErrors.personalEmail = 'Personal Email Address is required';
-      } else if (!/\S+@\S+\.\S+/.test(attendee.personalEmail)) {
-        detailErrors.personalEmail = 'Invalid email format';
-      }
-
-      nextAttendeeDetailErrors.push(detailErrors);
-    }
-
     setErrors(newErrors);
-    setAttendeeDetailErrors(nextAttendeeDetailErrors);
-    return (
-      Object.keys(newErrors).length === 0
-      && nextAttendeeDetailErrors.every((detailErrors) => Object.keys(detailErrors).length === 0)
-    );
+    return Object.keys(newErrors).length === 0;
   };
 
   const mapServerErrors = (backendErrors: Record<string, string[]>) => {
@@ -478,10 +280,7 @@ export function RegistrationPage() {
       company_landline_no: 'companyLandline',
       company_email_address: 'companyEmail',
       company_id_to_bring: 'bringCompanyId',
-      vehicle_type: 'vehicleType',
-      will_come: 'willCome',
-      attendee_count: 'attendeeCount',
-      additional_attendees: 'attendeeCount'
+      vehicle_type: 'vehicleType'
     };
 
     const mapped: Partial<Record<keyof FormData, string>> = {};
@@ -509,7 +308,6 @@ export function RegistrationPage() {
         hasVehicle,
         otherVehicleType,
         otherIndustryType,
-        attendeeDetails,
         ...submissionData
       } = formData;
       const payload = {
@@ -528,20 +326,10 @@ export function RegistrationPage() {
             ? otherVehicleType.trim()
             : formData.vehicleType.trim()
           : '',
-        willCome: Number(formData.attendeeCount || 0) > 0,
+        willCome: true,
         companyIdToBring: formData.bringCompanyId,
-        attendeeCount: Number(formData.attendeeCount || 1),
-        attendeeDetails: attendeeDetails.map((detail) => ({
-          email: detail.email.trim(),
-          middleInitial: detail.middleInitial.trim().toUpperCase(),
-          designation: detail.designation.trim(),
-          firstName: detail.firstName.trim(),
-          lastName: detail.lastName.trim(),
-          mobileNo: detail.mobileNo.trim(),
-          viberNo: detail.viberNo.trim(),
-          gcashNo: detail.gcashNo.trim(),
-          personalEmail: detail.personalEmail.trim()
-        }))
+        attendeeCount: 1,
+        attendeeDetails: []
       };
 
       const response = await fetch(API_URL, {
@@ -586,7 +374,6 @@ export function RegistrationPage() {
     if (window.confirm('Are you sure you want to clear the form?')) {
       setFormData(initialFormData);
       setErrors({});
-      setAttendeeDetailErrors([]);
       setSubmitError('');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -817,59 +604,8 @@ export function RegistrationPage() {
               )}
             </div>
 
-            <div className="glass-panel-soft rounded-xl border border-[#bfd5c7] bg-[#f5faf6] p-3.5 sm:p-4">
-              <p className="text-sm text-[#335f49] md:text-base">
-                Will there be additional attendees under this registration?
-              </p>
-
-              <div className="mt-3 flex flex-wrap gap-3">
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
-                  <input
-                    type="radio"
-                    name="hasAdditionalAttendees"
-                    value="yes"
-                    checked={formData.hasAdditionalAttendees === true}
-                    onChange={handleChange}
-                    className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
-                  />
-                  Yes
-                </label>
-
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
-                  <input
-                    type="radio"
-                    name="hasAdditionalAttendees"
-                    value="no"
-                    checked={formData.hasAdditionalAttendees === false}
-                    onChange={handleChange}
-                    className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
-                  />
-                  No
-                </label>
-              </div>
-
-              {errors.hasAdditionalAttendees && (
-                <span className="mt-2 block text-xs text-[#b64a4a]">{errors.hasAdditionalAttendees}</span>
-              )}
-
-              {formData.hasAdditionalAttendees && (
-                <div className="mt-3 w-full sm:max-w-[340px]">
-                  <FormField
-                    label="How many attendees will attend (including you)?"
-                    name="attendeeCount"
-                    type="number"
-                    value={formData.attendeeCount.toString()}
-                    onChange={handleChange}
-                    error={errors.attendeeCount}
-                    required
-                    min={2}
-                  />
-                </div>
-              )}
-            </div>
-
             <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2">
-              <SectionTitle title="Primary Attendee Details" icon={Users} />
+              <SectionTitle title="Attendee Details" icon={Users} />
               <FormField
                 label="Email Address"
                 name="email"
@@ -911,100 +647,6 @@ export function RegistrationPage() {
                 error={errors.designation}
                 required
               />
-
-              {formData.attendeeCount > 1 && (
-                <SectionTitle title="Additional Attendee Details" icon={Users} className="mt-2" />
-              )}
-
-              {formData.attendeeDetails.map((attendee, index) => (
-                <React.Fragment key={`attendee-${index}`}>
-                  <div className="glass-panel-soft md:col-span-2 rounded-xl border border-[#cadbcf] bg-[#f8fcf8] px-3 py-2.5 text-sm font-semibold text-[#2f5f47]">
-                    Attendee {index + 2} - Personal Details
-                  </div>
-
-                  <FormField
-                    label="Email Address"
-                    name={`attendeeEmail-${index}`}
-                    type="email"
-                    value={attendee.email}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'email', e.target.value)}
-                    error={attendeeDetailErrors[index]?.email}
-                    required
-                    className="md:col-span-2"
-                  />
-
-                  <FormField
-                    label="Last Name"
-                    name={`attendeeLastName-${index}`}
-                    value={attendee.lastName}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'lastName', e.target.value)}
-                    error={attendeeDetailErrors[index]?.lastName}
-                    required
-                  />
-                  <FormField
-                    label="First Name"
-                    name={`attendeeFirstName-${index}`}
-                    value={attendee.firstName}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'firstName', e.target.value)}
-                    error={attendeeDetailErrors[index]?.firstName}
-                    required
-                  />
-                  <FormField
-                    label="Middle Initial"
-                    name={`attendeeMiddleInitial-${index}`}
-                    value={attendee.middleInitial}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'middleInitial', e.target.value)}
-                    maxLength={1}
-                  />
-                  <FormField
-                    label="Designation / Job Title"
-                    name={`attendeeDesignation-${index}`}
-                    value={attendee.designation}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'designation', e.target.value)}
-                    error={attendeeDetailErrors[index]?.designation}
-                    required
-                  />
-
-                  <div className="glass-panel-soft md:col-span-2 rounded-xl border border-[#cadbcf] bg-[#f8fcf8] px-3 py-2.5 text-sm font-semibold text-[#2f5f47]">
-                    Attendee {index + 2} - Contact Details
-                  </div>
-
-                  <FormField
-                    label="Mobile / Cellphone No."
-                    name={`attendeeMobileNo-${index}`}
-                    value={attendee.mobileNo}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'mobileNo', e.target.value)}
-                    error={attendeeDetailErrors[index]?.mobileNo}
-                    maxLength={11}
-                    required
-                  />
-                  <FormField
-                    label="Viber No."
-                    name={`attendeeViberNo-${index}`}
-                    value={attendee.viberNo}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'viberNo', e.target.value)}
-                  />
-                  <FormField
-                    label="GCash No. (for raffle)"
-                    name={`attendeeGcashNo-${index}`}
-                    value={attendee.gcashNo}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'gcashNo', e.target.value)}
-                    error={attendeeDetailErrors[index]?.gcashNo}
-                    maxLength={11}
-                    required
-                  />
-                  <FormField
-                    label="Personal Email Address"
-                    name={`attendeePersonalEmail-${index}`}
-                    type="email"
-                    value={attendee.personalEmail}
-                    onChange={(e) => handleAttendeeDetailChange(index, 'personalEmail', e.target.value)}
-                    error={attendeeDetailErrors[index]?.personalEmail}
-                    required
-                    className="md:col-span-2"
-                  />
-                </React.Fragment>
-              ))}
 
               <SectionTitle title="Contact Details" icon={Phone} className="mt-2" />
               <FormField

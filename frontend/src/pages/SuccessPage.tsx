@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Calendar,
@@ -268,11 +268,6 @@ export function SuccessPage() {
             </ul>
           </motion.article>
 
-          <div className="mt-6 text-center sm:mt-8">
-            <Link to="/" className="ghost-link text-sm font-semibold md:text-base">
-              Register Another Person
-            </Link>
-          </div>
         </motion.section>
       </div>
     </div>
