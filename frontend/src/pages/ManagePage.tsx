@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Download,
   Eye,
-  Filter,
   Search,
   Users,
   X
@@ -60,6 +59,7 @@ type PaginationMeta = {
 
 const LIST_API = apiUrl('/api/manage/registrations/');
 const XLSX_EXPORT_URL = apiUrl('/api/manage/export/xlsx/?theme=mint');
+const PAGE_SIZE = 10;
 
 export function ManagePage() {
   const [rows, setRows] = useState<RegistrationRow[]>([]);
@@ -67,13 +67,12 @@ export function ManagePage() {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
-  const [willComeFilter, setWillComeFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [selected, setSelected] = useState<RegistrationRow | null>(null);
   const [pagination, setPagination] = useState<PaginationMeta>({
     page: 1,
-    pageSize: 10,
+    pageSize: PAGE_SIZE,
     total: 0,
     totalPages: 1,
     hasNext: false,
@@ -102,9 +101,6 @@ export function ManagePage() {
 
         if (searchTerm.trim()) {
           params.set('q', searchTerm.trim());
-        }
-        if (willComeFilter !== 'all') {
-          params.set('will_come', willComeFilter);
         }
 
         const response = await fetch(`${LIST_API}?${params.toString()}`);
@@ -141,7 +137,7 @@ export function ManagePage() {
     };
 
     load();
-  }, [page, pageSize, searchTerm, willComeFilter]);
+  }, [page, pageSize, searchTerm]);
 
   const confirmedCount = useMemo(() => rows.filter((row) => row.willCome).length, [rows]);
   const attendeeTotalOnPage = useMemo(
@@ -153,11 +149,6 @@ export function ManagePage() {
     e.preventDefault();
     setPage(1);
     setSearchTerm(searchDraft);
-  };
-
-  const handleFilterChange = (value: string) => {
-    setPage(1);
-    setWillComeFilter(value);
   };
 
   const handlePageSizeChange = (value: number) => {
@@ -200,7 +191,7 @@ export function ManagePage() {
 
         <section className="glass-panel section-reveal mb-4 overflow-hidden sm:mb-5">
           <div className="border-b border-[#cadbcf]/90 p-3 sm:p-4">
-            <form onSubmit={handleSearchSubmit} className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
+            <form onSubmit={handleSearchSubmit} className="grid gap-3 md:grid-cols-[1fr_auto]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6f8b7d]" />
                 <input
@@ -212,25 +203,6 @@ export function ManagePage() {
                   style={{ paddingLeft: '3rem' }}
                 />
               </div>
-
-              <label className="secondary-btn inline-flex items-center gap-2 px-3 py-2 text-sm">
-                <Filter className="h-4 w-4" />
-                <select
-                  value={willComeFilter}
-                  onChange={(e) => handleFilterChange(e.target.value)}
-                  className="bg-transparent text-[#315d47] outline-none"
-                >
-                  <option value="all" className="bg-[#ffffff]">
-                    All
-                  </option>
-                  <option value="true" className="bg-[#ffffff]">
-                    Attending
-                  </option>
-                  <option value="false" className="bg-[#ffffff]">
-                    Not Attending
-                  </option>
-                </select>
-              </label>
 
               <label className="secondary-btn inline-flex items-center gap-2 px-3 py-2 text-sm">
                 Rows
@@ -250,19 +222,6 @@ export function ManagePage() {
                   </option>
                 </select>
               </label>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchDraft('');
-                  setSearchTerm('');
-                  setWillComeFilter('all');
-                  setPage(1);
-                }}
-                className="secondary-btn px-4 py-2 text-sm"
-              >
-                Clear Filters
-              </button>
             </form>
           </div>
 
