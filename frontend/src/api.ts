@@ -5,8 +5,14 @@ function inferFallbackBaseUrl(): string {
     return '';
   }
 
-  if (typeof window !== 'undefined' && window.location.hostname === 'maptech-event.up.railway.app') {
-    return 'https://maptech-event-api.up.railway.app';
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+
+    // Railway convention fallback: "<service>.up.railway.app" -> "<service>-api.up.railway.app"
+    if (hostname.endsWith('.up.railway.app') && !hostname.includes('-api.')) {
+      const serviceName = hostname.slice(0, -'.up.railway.app'.length);
+      return `https://${serviceName}-api.up.railway.app`;
+    }
   }
 
   return '';
