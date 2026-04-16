@@ -15,7 +15,10 @@ export function App() {
           </Routes>
         </main>
 
-        <footer className="relative z-10 border-t border-[#c9dbcf]/85 bg-[#ffffff]/90 py-4 text-center text-xs tracking-wide text-[#5f7568] backdrop-blur">
+        <footer
+          className="relative z-10 border-t border-[#c9dbcf]/85 bg-[#ffffff]/90 py-4 text-center text-xs tracking-wide text-[#5f7568] backdrop-blur"
+          data-html2canvas-ignore="true"
+        >
           Copyright © Maptech Information Solutions Inc. All Rights Reserved.
         </footer>
       </div>

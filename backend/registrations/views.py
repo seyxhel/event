@@ -48,11 +48,6 @@ XLSX_EXPORT_CONFIG = json.loads(
 		{"header": "Company Office Address", "key": "company_office_address", "width": 34},
 		{"header": "Company Landline No.", "key": "company_landline_no", "width": 18},
 		{"header": "Company Email", "key": "company_email_address", "width": 30},
-		{"header": "Company ID To Bring", "key": "company_id_to_bring", "width": 18},
-		{"header": "Vehicle Type", "key": "vehicle_type", "width": 18},
-		{"header": "Will Come", "key": "will_come", "width": 12},
-		{"header": "Attendee Count", "key": "attendee_count", "width": 14},
-		{"header": "Additional Attendees", "key": "additional_attendees", "width": 30},
 		{"header": "Submitted At", "key": "submitted_at", "width": 22}
 	  ],
 	  "themes": {
