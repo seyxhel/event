@@ -11,6 +11,9 @@ class EventRegistrationForm(forms.ModelForm):
         'viber_no',
         'vehicle_type',
         'additional_attendees',
+        'linkedin_account',
+        'facebook_account',
+        'messenger_account',
     )
 
     class Meta:
@@ -26,7 +29,11 @@ class EventRegistrationForm(forms.ModelForm):
             'viber_no',
             'gcash_no',
             'personal_email_address',
+            'linkedin_account',
+            'facebook_account',
+            'messenger_account',
             'company_name',
+            'company_category',
             'industry_type',
             'company_office_address',
             'company_landline_no',
@@ -48,7 +55,17 @@ class EventRegistrationForm(forms.ModelForm):
             'viber_no': forms.TextInput(attrs={'class': 'input-field'}),
             'gcash_no': forms.TextInput(attrs={'class': 'input-field'}),
             'personal_email_address': forms.EmailInput(attrs={'class': 'input-field'}),
+            'linkedin_account': forms.TextInput(attrs={'class': 'input-field'}),
+            'facebook_account': forms.TextInput(attrs={'class': 'input-field'}),
+            'messenger_account': forms.TextInput(attrs={'class': 'input-field'}),
             'company_name': forms.TextInput(attrs={'class': 'input-field'}),
+            'company_category': forms.Select(
+                attrs={'class': 'input-field'},
+                choices=(
+                    ('government', 'Government'),
+                    ('private', 'Private'),
+                ),
+            ),
             'industry_type': forms.TextInput(attrs={'class': 'input-field'}),
             'company_office_address': forms.Textarea(attrs={'class': 'input-field textarea-field', 'rows': 3}),
             'company_landline_no': forms.TextInput(attrs={'class': 'input-field'}),
@@ -70,7 +87,11 @@ class EventRegistrationForm(forms.ModelForm):
             'viber_no': 'Viber No.',
             'gcash_no': 'G-Cash No. (for raffle)',
             'personal_email_address': 'Personal Email Address',
+            'linkedin_account': 'LinkedIn Account',
+            'facebook_account': 'Facebook Account',
+            'messenger_account': 'Messenger Account',
             'company_name': 'Company Name',
+            'company_category': 'Company Category',
             'industry_type': 'Industry Type',
             'company_office_address': 'Company Office Address',
             'company_landline_no': 'Company Landline No.',
@@ -120,6 +141,12 @@ class EventRegistrationForm(forms.ModelForm):
         if attendee_count is None or attendee_count < 1:
             raise forms.ValidationError('Attendee count must be at least 1.')
         return attendee_count
+
+    def clean_company_category(self):
+        category = (self.cleaned_data.get('company_category') or '').strip().lower()
+        if category not in {'government', 'private'}:
+            raise forms.ValidationError('Company category must be Government or Private.')
+        return category
 
     def clean_additional_attendees(self):
         additional_attendees = self.cleaned_data.get('additional_attendees') or []

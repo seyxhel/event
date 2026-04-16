@@ -11,7 +11,7 @@ export const EVENT_DETAILS = {
   venueMapEmbedUrl:
     'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3669.7342027177297!2d121.02823407487296!3d14.612659985875135!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397b62d0b68fa0d%3A0xc33c19bd640d488b!2sOasis%20Manila!5e1!3m2!1sen!2sph!4v1776269473685!5m2!1sen!2sph',
   officeLandline: '(02) 8800-5399',
-  officeEmail: 'sales@maptechisi.com',
+  officeEmail: 'salesmisi@maptechisi.com',
   shortName: 'Cybersecurity Implementation Journey'
 } as const;
 

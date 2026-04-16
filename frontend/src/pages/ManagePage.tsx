@@ -23,7 +23,11 @@ type RegistrationRow = {
   viberNo: string;
   gcashNo: string;
   personalEmail: string;
+  linkedinAccount: string;
+  facebookAccount: string;
+  messengerAccount: string;
   companyName: string;
+  companyCategory: string;
   industryType: string;
   companyAddress: string;
   companyLandline: string;
@@ -407,11 +411,18 @@ export function ManagePage() {
               <Detail label="Designation" value={selected.designation} />
               <Detail label="Email" value={selected.email} />
               <Detail label="Personal Email" value={selected.personalEmail} />
+              <Detail label="LinkedIn" value={selected.linkedinAccount} />
+              <Detail label="Facebook" value={selected.facebookAccount} />
+              <Detail label="Messenger" value={selected.messengerAccount} />
               <Detail label="Mobile/CP No." value={selected.mobileNo} />
               <Detail label="Viber No." value={selected.viberNo} />
               <Detail label="G-Cash No." value={selected.gcashNo} />
               <Detail label="Vehicle Type" value={selected.vehicleType} />
               <Detail label="Company Name" value={selected.companyName} />
+              <Detail
+                label="Company Category"
+                value={selected.companyCategory ? selected.companyCategory[0].toUpperCase() + selected.companyCategory.slice(1) : ''}
+              />
               <Detail label="Industry Type" value={selected.industryType} />
               <Detail label="Company Landline" value={selected.companyLandline} />
               <Detail label="Company Email" value={selected.companyEmail} />
