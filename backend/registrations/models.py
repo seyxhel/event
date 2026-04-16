@@ -20,6 +20,7 @@ class EventRegistration(models.Model):
 	vehicle_type = models.CharField(max_length=100, default='')
 	will_come = models.BooleanField(default=True)
 	attendee_count = models.PositiveIntegerField(default=1)
+	additional_attendees = models.JSONField(default=list, blank=True)
 	data_privacy_consent = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
 
