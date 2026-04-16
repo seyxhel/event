@@ -32,6 +32,17 @@ type RegistrationRow = {
   vehicleType: string;
   willCome: boolean;
   attendeeCount: number;
+  attendeeDetails: Array<{
+    email: string;
+    middleInitial: string;
+    designation: string;
+    firstName: string;
+    lastName: string;
+    mobileNo: string;
+    viberNo: string;
+    gcashNo: string;
+    personalEmail: string;
+  }>;
   createdAt: string;
 };
 
@@ -409,6 +420,28 @@ export function ManagePage() {
                 value={selected.companyAddress}
                 className="md:col-span-2"
               />
+
+              {selected.attendeeDetails?.length > 0 && (
+                <article className="glass-panel-soft border p-3 sm:p-3.5 md:col-span-2">
+                  <p className="form-label text-[0.72rem] text-[#5f7568]">Additional Attendee Details</p>
+                  <div className="mt-2 space-y-2 text-[#1f4736]">
+                    {selected.attendeeDetails.map((attendee, index) => (
+                      <div key={`${attendee.email}-${index}`} className="rounded-lg border border-[#d7e5dc] bg-[#f8fbf9] p-2.5">
+                        <p className="font-semibold">
+                          Attendee {index + 2}: {attendee.firstName} {attendee.lastName}
+                        </p>
+                        <p className="text-sm">Middle Initial: {attendee.middleInitial || '-'}</p>
+                        <p className="text-sm">Designation: {attendee.designation || '-'}</p>
+                        <p className="text-sm">Email: {attendee.email || '-'}</p>
+                        <p className="text-sm">Personal Email: {attendee.personalEmail || '-'}</p>
+                        <p className="text-sm">Mobile: {attendee.mobileNo || '-'}</p>
+                        <p className="text-sm">Viber: {attendee.viberNo || '-'}</p>
+                        <p className="text-sm">GCash: {attendee.gcashNo || '-'}</p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              )}
             </div>
           </section>
         </div>
