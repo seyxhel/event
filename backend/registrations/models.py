@@ -36,6 +36,7 @@ class EventRegistration(models.Model):
 
 
 class EventFeedback(models.Model):
+	personal_company_info_consent = models.BooleanField(null=True, blank=True)
 	event_satisfaction = models.PositiveSmallIntegerField()
 	job_relevance = models.PositiveSmallIntegerField()
 	key_takeaways = models.TextField(default='', blank=True)

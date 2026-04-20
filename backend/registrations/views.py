@@ -89,6 +89,7 @@ FEEDBACK_XLSX_EXPORT_CONFIG = {
 	},
 	'columns': [
 		{'header': 'Reference', 'key': 'reference', 'width': 22},
+		{'header': 'Personal & Company Info Consent', 'key': 'personal_company_info_consent', 'width': 30},
 		{'header': 'Event Satisfaction', 'key': 'event_satisfaction', 'width': 20},
 		{'header': 'Job Relevance', 'key': 'job_relevance', 'width': 18},
 		{'header': 'Key Takeaways', 'key': 'key_takeaways', 'width': 40},
@@ -180,6 +181,7 @@ def _serialize_feedback(feedback: EventFeedback):
 	return {
 		'id': feedback.id,
 		'reference': _format_feedback_reference(feedback),
+		'personalCompanyInfoConsent': feedback.personal_company_info_consent,
 		'eventSatisfaction': feedback.event_satisfaction,
 		'jobRelevance': feedback.job_relevance,
 		'keyTakeaways': feedback.key_takeaways,
@@ -234,6 +236,7 @@ def _map_payload(payload):
 
 def _map_feedback_payload(payload):
 	return {
+		'personal_company_info_consent': payload.get('personalCompanyInfoConsent'),
 		'event_satisfaction': payload.get('eventSatisfaction'),
 		'job_relevance': payload.get('jobRelevance'),
 		'key_takeaways': payload.get('keyTakeaways', ''),
@@ -278,6 +281,7 @@ def _build_export_row(registration: EventRegistration):
 def _build_feedback_export_row(feedback: EventFeedback):
 	return {
 		'reference': _format_feedback_reference(feedback),
+		'personal_company_info_consent': 'Agree' if feedback.personal_company_info_consent else 'Do not agree',
 		'event_satisfaction': feedback.event_satisfaction,
 		'job_relevance': feedback.job_relevance,
 		'key_takeaways': feedback.key_takeaways,

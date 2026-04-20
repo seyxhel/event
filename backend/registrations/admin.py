@@ -11,5 +11,5 @@ class EventRegistrationAdmin(admin.ModelAdmin):
 
 @admin.register(EventFeedback)
 class EventFeedbackAdmin(admin.ModelAdmin):
-	list_display = ('id', 'event_satisfaction', 'job_relevance', 'created_at')
+	list_display = ('id', 'personal_company_info_consent', 'event_satisfaction', 'job_relevance', 'created_at')
 	search_fields = ('logistics_feedback', 'key_takeaways', 'overall_feedback', 'session_comments')

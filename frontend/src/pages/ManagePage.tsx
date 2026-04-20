@@ -5,6 +5,7 @@ import { apiUrl } from '../api';
 type FeedbackRow = {
   id: number;
   reference: string;
+  personalCompanyInfoConsent: boolean | null;
   eventSatisfaction: number;
   jobRelevance: number;
   keyTakeaways: string;
@@ -373,6 +374,16 @@ export function ManagePage() {
             <div className="grid grid-cols-1 gap-3 p-4 text-xs sm:gap-4 sm:p-5 sm:text-sm md:grid-cols-2 md:text-base">
               <Detail label="Reference" value={selected.reference} />
               <Detail label="Submitted" value={new Date(selected.createdAt).toLocaleString()} />
+              <Detail
+                label="Personal & Company Info Consent"
+                value={
+                  selected.personalCompanyInfoConsent === null
+                    ? 'Not provided'
+                    : selected.personalCompanyInfoConsent
+                    ? 'Agree'
+                    : 'Do not agree'
+                }
+              />
               <Detail
                 label="Event Satisfaction"
                 value={`${selected.eventSatisfaction} - ${SATISFACTION_LABELS[String(selected.eventSatisfaction)] || '-'}`}

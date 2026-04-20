@@ -63,8 +63,10 @@ type LogisticsRating = (typeof LOGISTICS_OPTIONS)[number]['value'] | '';
 type SessionKey = (typeof SESSION_ITEMS)[number]['key'];
 type SessionRating = (typeof SESSION_OPTIONS)[number]['value'] | '';
 type ScaleRating = '1' | '2' | '3' | '4' | '5' | '';
+type ConsentChoice = 'agree' | 'disagree' | '';
 
 interface FeedbackFormData {
+  personalCompanyInfoConsent: ConsentChoice;
   eventSatisfaction: ScaleRating;
   jobRelevance: ScaleRating;
   keyTakeaways: string;
@@ -76,6 +78,7 @@ interface FeedbackFormData {
 }
 
 interface FeedbackErrors {
+  personalCompanyInfoConsent?: string;
   eventSatisfaction?: string;
   jobRelevance?: string;
   logisticsRatings?: string;
@@ -133,6 +136,7 @@ const createEmptySessionRatings = (): Record<SessionKey, SessionRating> => ({
 });
 
 const initialFormData: FeedbackFormData = {
+  personalCompanyInfoConsent: '',
   eventSatisfaction: '',
   jobRelevance: '',
   keyTakeaways: '',
@@ -204,6 +208,10 @@ export function FeedbackPage() {
   const validateForm = () => {
     const newErrors: FeedbackErrors = {};
 
+    if (!formData.personalCompanyInfoConsent) {
+      newErrors.personalCompanyInfoConsent = 'Please select your consent option.';
+    }
+
     if (!formData.eventSatisfaction) {
       newErrors.eventSatisfaction = 'Please rate your overall satisfaction with the event.';
     }
@@ -226,6 +234,7 @@ export function FeedbackPage() {
 
   const mapServerErrors = (backendErrors: Record<string, string[]>) => {
     const fieldMap: Record<string, keyof FeedbackErrors> = {
+      personal_company_info_consent: 'personalCompanyInfoConsent',
       event_satisfaction: 'eventSatisfaction',
       job_relevance: 'jobRelevance',
       key_takeaways: 'keyTakeaways',
@@ -258,15 +267,19 @@ export function FeedbackPage() {
     setSubmitError('');
 
     try {
+      const logisticsAdditionalFeedback = formData.logisticsAdditionalFeedback.trim();
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          personalCompanyInfoConsent: formData.personalCompanyInfoConsent === 'agree',
           eventSatisfaction: Number(formData.eventSatisfaction),
           jobRelevance: Number(formData.jobRelevance),
           keyTakeaways: formData.keyTakeaways.trim(),
           logisticsRatings: formData.logisticsRatings,
-          logisticsAdditionalFeedback: formData.logisticsAdditionalFeedback.trim(),
+          // Keep compatibility with backends that still validate this field as required.
+          logisticsAdditionalFeedback:
+            logisticsAdditionalFeedback || 'No additional logistics feedback.',
           sessionRelevance: formData.sessionRelevance,
           sessionsAdditionalComments: formData.sessionsAdditionalComments.trim(),
           overallFeedback: formData.overallFeedback.trim()
@@ -275,15 +288,33 @@ export function FeedbackPage() {
 
       const contentType = response.headers.get('content-type') || '';
       if (!contentType.toLowerCase().includes('application/json')) {
-        throw new Error('API endpoint returned a non-JSON response.');
+        const rawBody = await response.text();
+        if (response.status === 403 && /csrf/i.test(rawBody)) {
+          setSubmitError(
+            'Submission is blocked by backend CSRF settings. Redeploy or restart the backend with the latest API updates.'
+          );
+        } else {
+          setSubmitError('Submission failed. The API returned an unexpected response format.');
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
       }
 
       const data = await response.json();
       if (!response.ok) {
         if (data?.errors) {
           setErrors(mapServerErrors(data.errors));
+
+          const firstError = Object.values(data.errors)
+            .flat()
+            .find((value): value is string => typeof value === 'string' && value.trim().length > 0);
+          setSubmitError(firstError || 'Submission failed. Please review your answers and try again.');
+        } else if (typeof data?.error === 'string' && data.error.trim().length > 0) {
+          setSubmitError(data.error);
+        } else {
+          setSubmitError('Submission failed. Please review your answers and try again.');
         }
-        setSubmitError('Submission failed. Please review your answers and try again.');
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
@@ -512,6 +543,61 @@ export function FeedbackPage() {
               value={formData.overallFeedback}
               onChange={handleInputChange}
             />
+
+            <article className="glass-panel-soft p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="display-font text-xl text-[#1f4736] sm:text-2xl">5. Consent Form</h3>
+                <span className="text-lg leading-none text-[#c05b5b]">*</span>
+              </div>
+              <p className="mt-3 text-base text-[#335f49]">
+                Event photos and videos have already been captured during the event. We request your consent to upload
+                and use them.
+              </p>
+              <p className="mt-1 text-base font-semibold text-[#1f4736]">
+                A. Photo &amp; Video Consent (Internal and External Use)
+              </p>
+              <p className="mt-2 text-sm italic text-[#4b6858]">Mark only one oval.</p>
+
+              <div className="mt-3 space-y-3">
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#d5e3da] bg-[#f7fcf8] p-3">
+                  <input
+                    type="radio"
+                    name="personalCompanyInfoConsent"
+                    value="agree"
+                    checked={formData.personalCompanyInfoConsent === 'agree'}
+                    onChange={handleInputChange}
+                    className="mt-1 h-5 w-5 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
+                  />
+                  <span className="text-sm text-[#244f3b] sm:text-base">
+                    I allow Maptech Information Solutions Inc. to upload and use event photos and videos that may
+                    include me for internal and external purposes, including documentation, reports,
+                    presentations, social media, and promotional materials.
+                  </span>
+                </label>
+
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-[#d5e3da] bg-[#f7fcf8] p-3">
+                  <input
+                    type="radio"
+                    name="personalCompanyInfoConsent"
+                    value="disagree"
+                    checked={formData.personalCompanyInfoConsent === 'disagree'}
+                    onChange={handleInputChange}
+                    className="mt-1 h-5 w-5 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
+                  />
+                  <span className="text-sm text-[#244f3b] sm:text-base">
+                    I do NOT allow the upload or use of event photos and videos that may include me for internal or
+                    external purposes.
+                  </span>
+                </label>
+              </div>
+
+              {errors.personalCompanyInfoConsent && (
+                <p className="mt-3 flex items-center gap-1 text-xs text-[#b64a4a]">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {errors.personalCompanyInfoConsent}
+                </p>
+              )}
+            </article>
 
             <div className="flex flex-col gap-3 border-t border-[#cadbcf] pt-6 sm:flex-row sm:pt-7">
               <button

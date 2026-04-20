@@ -216,6 +216,7 @@ class EventFeedbackForm(forms.ModelForm):
     class Meta:
         model = EventFeedback
         fields = [
+            'personal_company_info_consent',
             'event_satisfaction',
             'job_relevance',
             'key_takeaways',
@@ -236,6 +237,12 @@ class EventFeedbackForm(forms.ModelForm):
         if event_satisfaction not in {1, 2, 3, 4, 5}:
             raise forms.ValidationError('Event satisfaction must be between 1 and 5.')
         return event_satisfaction
+
+    def clean_personal_company_info_consent(self):
+        consent = self.cleaned_data.get('personal_company_info_consent')
+        if consent is None:
+            raise forms.ValidationError('Please select your consent option.')
+        return consent
 
     def clean_job_relevance(self):
         job_relevance = self.cleaned_data.get('job_relevance')
