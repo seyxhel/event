@@ -53,16 +53,27 @@ export function SuccessPage() {
   const [pdfError, setPdfError] = useState<string | null>(null);
 
   const state = (location.state as {
+    mode?: 'registration' | 'feedback';
     firstName?: string;
     lastName?: string;
     email?: string;
     refNumber?: string;
+    submittedAt?: string;
   }) || null;
+
+  const isFeedback = state?.mode !== 'registration';
 
   const fullName =
     state?.firstName && state?.lastName ? `${state.firstName} ${state.lastName}` : 'Guest';
   const email = state?.email || 'Not provided';
-  const refNumber = state?.refNumber || 'MAP-XXXX-XXXX';
+  const refNumber = state?.refNumber || (isFeedback ? 'FBK-XXXX-XXXX' : 'MAP-XXXX-XXXX');
+  const thankYouTitle = isFeedback ? 'Thank You for Your Feedback' : 'Thank You for Registering';
+  const thankYouMessage = isFeedback
+    ? 'Thank you for completing the feedback form. Your insights help us improve future events, sessions, and logistics.'
+    : 'We are excited to welcome you at the event. Your registration has been recorded successfully.';
+  const thankYouNextStep = isFeedback
+    ? 'Please keep your reference number for any follow-up from our organizing team.'
+    : 'Please save your reference number and keep this confirmation page for event day check-in.';
 
   useEffect(() => {
     const now = new Date();
@@ -176,7 +187,7 @@ export function SuccessPage() {
       }
 
       const safeRef = refNumber.replace(/[^a-zA-Z0-9_-]+/g, '-');
-      pdf.save(`registration-${safeRef}.pdf`);
+      pdf.save(`${isFeedback ? 'feedback' : 'registration'}-${safeRef}.pdf`);
     } catch (error) {
       console.error(error);
       setPdfError('Unable to export PDF right now. Please try again.');
@@ -293,11 +304,13 @@ export function SuccessPage() {
             <CheckCircle2 className="soft-float mx-auto mb-4 h-16 w-16 text-[#3f8657] sm:h-20 sm:w-20" />
             <div className="mx-auto w-full max-w-3xl">
               <h1 className="display-font text-center text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
-                Registration Successful
+                {isFeedback ? 'Feedback Submitted' : 'Registration Successful'}
               </h1>
             </div>
             <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[#5f7568] md:text-base">
-              Thank you for registering for {EVENT_DETAILS.title}: {EVENT_DETAILS.subtitle}.
+              {isFeedback
+                ? 'Thank you for completing the feedback form.'
+                : `Thank you for registering for ${EVENT_DETAILS.title}: ${EVENT_DETAILS.subtitle}.`}
             </p>
             <div className="mt-4 flex justify-center sm:hidden" data-html2canvas-ignore="true">
               <button
@@ -318,7 +331,7 @@ export function SuccessPage() {
           </div>
 
           <article className="glass-panel-soft rounded-xl p-4 sm:p-5 md:p-6">
-            <h3 className="form-label mb-4">Registration Details</h3>
+            <h3 className="form-label mb-4">{isFeedback ? 'Feedback Details' : 'Registration Details'}</h3>
 
             <div className="space-y-3 text-sm sm:space-y-4 md:text-base">
               <DetailBlock
@@ -346,24 +359,40 @@ export function SuccessPage() {
                 }
               />
 
-              <DetailBlock
-                icon={<User className="h-5 w-5 text-[#b9923d]" />}
-                label="Registrant Name"
-                value={fullName}
-              />
+              {isFeedback ? (
+                <DetailBlock
+                  icon={<User className="h-5 w-5 text-[#b9923d]" />}
+                  label="Submission Type"
+                  value="Anonymous Event Feedback"
+                />
+              ) : (
+                <>
+                  <DetailBlock
+                    icon={<User className="h-5 w-5 text-[#b9923d]" />}
+                    label="Registrant Name"
+                    value={fullName}
+                  />
 
-              <DetailBlock
-                icon={<Mail className="h-5 w-5 text-[#b9923d]" />}
-                label="Email Address"
-                value={email}
-              />
+                  <DetailBlock
+                    icon={<Mail className="h-5 w-5 text-[#b9923d]" />}
+                    label="Email Address"
+                    value={email}
+                  />
+                </>
+              )}
 
               <DetailBlock
                 icon={<Calendar className="h-5 w-5 text-[#b9923d]" />}
-                label="Registration Date"
+                label={isFeedback ? 'Submission Date' : 'Registration Date'}
                 value={currentDate}
               />
             </div>
+          </article>
+
+          <article className="glass-panel-soft mt-6 rounded-xl border border-[#b8d4c4] bg-[#f4faf6] p-4 sm:mt-7 sm:p-5">
+            <h2 className="display-font text-xl text-[#1f4736] sm:text-2xl">{thankYouTitle}</h2>
+            <p className="mt-2 text-sm text-[#325846] md:text-base">{thankYouMessage}</p>
+            <p className="mt-2 text-sm text-[#4e6b5c] md:text-base">{thankYouNextStep}</p>
           </article>
 
           <motion.article
@@ -374,18 +403,37 @@ export function SuccessPage() {
           >
             <h2 className="display-font text-xl text-[#7b5a1b] sm:text-2xl">Important Notes</h2>
             <ul className="mt-3 space-y-2 text-left text-sm text-[#6e5320] md:text-base">
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
-                Bring either your Company ID or one valid ID on event day.
-              </li>
-              <li className="flex items-start gap-2">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
-                Please keep your email confirmation as proof of registration.
-              </li>
-              <li className="flex items-start gap-2">
-                <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
-                Take a screenshot or download a copy of this successful registration page and present it at the entrance.
-              </li>
+              {isFeedback ? (
+                <>
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                    Your feedback is recorded and will be included in the event improvement review.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                    Keep your reference number for follow-up questions from the organizing team.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                    You can save or download this page for your own records.
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                    Bring either your Company ID or one valid ID on event day.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                    Please keep your email confirmation as proof of registration.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
+                    Take a screenshot or download a copy of this successful registration page and present it at the entrance.
+                  </li>
+                </>
+              )}
             </ul>
           </motion.article>
 
@@ -404,16 +452,18 @@ export function SuccessPage() {
             <CheckCircle2 className="mx-auto mb-4 h-16 w-16 text-[#3f8657] sm:h-20 sm:w-20" />
             <div className="mx-auto w-full max-w-3xl">
               <h1 className="display-font text-center text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
-                Registration Successful
+                {isFeedback ? 'Feedback Submitted' : 'Registration Successful'}
               </h1>
             </div>
             <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[#5f7568] md:text-base">
-              Thank you for registering for {EVENT_DETAILS.title}: {EVENT_DETAILS.subtitle}.
+              {isFeedback
+                ? 'Thank you for completing the feedback form.'
+                : `Thank you for registering for ${EVENT_DETAILS.title}: ${EVENT_DETAILS.subtitle}.`}
             </p>
           </div>
 
           <article className="rounded-xl border border-[#cfddd2] bg-[#ffffff] p-4 sm:p-5 md:p-6">
-            <h3 className="form-label mb-4">Registration Details</h3>
+            <h3 className="form-label mb-4">{isFeedback ? 'Feedback Details' : 'Registration Details'}</h3>
 
             <div className="space-y-3 text-sm sm:space-y-4 md:text-base">
               <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
@@ -433,31 +483,45 @@ export function SuccessPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
-                <div className="flex items-start gap-3">
-                  <User className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
-                  <div>
-                    <p className="form-label text-[0.72rem] text-[#5f7568]">Registrant Name</p>
-                    <p className="mt-1 break-words text-[#214736]">{fullName}</p>
+              {isFeedback ? (
+                <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
+                  <div className="flex items-start gap-3">
+                    <User className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
+                    <div>
+                      <p className="form-label text-[0.72rem] text-[#5f7568]">Submission Type</p>
+                      <p className="mt-1 break-words text-[#214736]">Anonymous Event Feedback</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
+                    <div className="flex items-start gap-3">
+                      <User className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
+                      <div>
+                        <p className="form-label text-[0.72rem] text-[#5f7568]">Registrant Name</p>
+                        <p className="mt-1 break-words text-[#214736]">{fullName}</p>
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
-                <div className="flex items-start gap-3">
-                  <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
-                  <div>
-                    <p className="form-label text-[0.72rem] text-[#5f7568]">Email Address</p>
-                    <p className="mt-1 break-words text-[#214736]">{email}</p>
+                  <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
+                    <div className="flex items-start gap-3">
+                      <Mail className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
+                      <div>
+                        <p className="form-label text-[0.72rem] text-[#5f7568]">Email Address</p>
+                        <p className="mt-1 break-words text-[#214736]">{email}</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </>
+              )}
 
               <div className="rounded-lg border border-[#cfded3] bg-[#ffffff] p-3 sm:p-3.5">
                 <div className="flex items-start gap-3">
                   <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-[#8a6420]" />
                   <div>
-                    <p className="form-label text-[0.72rem] text-[#5f7568]">Registration Date</p>
+                    <p className="form-label text-[0.72rem] text-[#5f7568]">{isFeedback ? 'Submission Date' : 'Registration Date'}</p>
                     <p className="mt-1 break-words text-[#214736]">{currentDate}</p>
                   </div>
                 </div>
@@ -465,21 +529,46 @@ export function SuccessPage() {
             </div>
           </article>
 
+          <article className="mt-6 rounded-xl border border-[#cfddd2] bg-[#f7fcf9] p-4 sm:mt-7 sm:p-5">
+            <h2 className="display-font text-xl text-[#1f4736] sm:text-2xl">{thankYouTitle}</h2>
+            <p className="mt-2 text-sm text-[#325846] md:text-base">{thankYouMessage}</p>
+            <p className="mt-2 text-sm text-[#4e6b5c] md:text-base">{thankYouNextStep}</p>
+          </article>
+
           <article className="mt-6 rounded-xl border border-[#cfddd2] bg-[#fff8ea] p-4 sm:mt-7 sm:p-5">
             <h2 className="display-font text-xl text-[#7b5a1b] sm:text-2xl">Important Notes</h2>
             <ul className="mt-3 space-y-2 text-left text-sm text-[#6e5320] md:text-base">
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
-                Bring either your Company ID or one valid ID on event day.
-              </li>
-              <li className="flex items-start gap-2">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
-                Please keep your email confirmation as proof of registration.
-              </li>
-              <li className="flex items-start gap-2">
-                <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
-                Take a screenshot or download a copy of this successful registration page and present it at the entrance.
-              </li>
+              {isFeedback ? (
+                <>
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                    Your feedback is recorded and will be included in the event improvement review.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                    Keep your reference number for follow-up questions from the organizing team.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                    You can save or download this page for your own records.
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                    Bring either your Company ID or one valid ID on event day.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                    Please keep your email confirmation as proof of registration.
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
+                    Take a screenshot or download a copy of this successful registration page and present it at the entrance.
+                  </li>
+                </>
+              )}
             </ul>
           </article>
         </section>

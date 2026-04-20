@@ -10,8 +10,8 @@ from openpyxl.utils import get_column_letter
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .forms import EventRegistrationForm
-from .models import EventRegistration
+from .forms import EventFeedbackForm, EventRegistrationForm
+from .models import EventFeedback, EventRegistration
 
 
 XLSX_EXPORT_CONFIG = json.loads(
@@ -75,6 +75,52 @@ XLSX_EXPORT_CONFIG = json.loads(
 	"""
 )
 
+FEEDBACK_XLSX_EXPORT_CONFIG = {
+	'sheetName': 'Feedback',
+	'header': {
+		'height': 26,
+		'font': {'name': 'Calibri', 'size': 11, 'bold': True, 'color': 'FFFFFF'},
+		'alignment': {'horizontal': 'left', 'vertical': 'center', 'wrapText': True, 'indent': 0},
+	},
+	'rows': {
+		'height': 24,
+		'font': {'name': 'Calibri', 'size': 10, 'bold': False, 'color': '1F4736'},
+		'alignment': {'horizontal': 'left', 'vertical': 'top', 'wrapText': True, 'indent': 1},
+	},
+	'columns': [
+		{'header': 'Reference', 'key': 'reference', 'width': 22},
+		{'header': 'Event Satisfaction', 'key': 'event_satisfaction', 'width': 20},
+		{'header': 'Job Relevance', 'key': 'job_relevance', 'width': 18},
+		{'header': 'Key Takeaways', 'key': 'key_takeaways', 'width': 40},
+		{'header': 'Logistics Ratings', 'key': 'logistics_ratings', 'width': 45},
+		{'header': 'Additional Logistics Feedback', 'key': 'logistics_feedback', 'width': 42},
+		{'header': 'Session Relevance', 'key': 'session_relevance', 'width': 45},
+		{'header': 'Session Comments', 'key': 'session_comments', 'width': 42},
+		{'header': 'Overall Feedback', 'key': 'overall_feedback', 'width': 42},
+		{'header': 'Submitted At', 'key': 'submitted_at', 'width': 22},
+	],
+	'themes': {
+		'mint': {
+			'headerFill': '3F8657',
+			'oddRowFill': 'F6FBF8',
+			'evenRowFill': 'ECF5EF',
+			'border': 'BFD3C5',
+		},
+		'gold': {
+			'headerFill': 'B9923D',
+			'oddRowFill': 'FFF8EC',
+			'evenRowFill': 'FFF3DE',
+			'border': 'E4D1A4',
+		},
+		'blue': {
+			'headerFill': '3E7BA6',
+			'oddRowFill': 'F2F7FC',
+			'evenRowFill': 'EAF2F9',
+			'border': 'BFD2E0',
+		},
+	},
+}
+
 
 def _with_cors_headers(response: JsonResponse) -> JsonResponse:
 	response['Access-Control-Allow-Origin'] = '*'
@@ -87,6 +133,12 @@ def _format_reference(registration: EventRegistration) -> str:
 	date_part = registration.created_at.strftime('%Y-%m%d')
 	sequence = f'{registration.id:04d}'
 	return f'MISI-{date_part}-{sequence}'
+
+
+def _format_feedback_reference(feedback: EventFeedback) -> str:
+	date_part = feedback.created_at.strftime('%Y-%m%d')
+	sequence = f'{feedback.id:04d}'
+	return f'FBK-{date_part}-{sequence}'
 
 
 def _serialize_registration(registration: EventRegistration):
@@ -121,6 +173,22 @@ def _serialize_registration(registration: EventRegistration):
 		'attendeeDetails': registration.additional_attendees,
 		'createdAt': registration.created_at.isoformat(),
 		'date': registration.created_at.isoformat(),
+	}
+
+
+def _serialize_feedback(feedback: EventFeedback):
+	return {
+		'id': feedback.id,
+		'reference': _format_feedback_reference(feedback),
+		'eventSatisfaction': feedback.event_satisfaction,
+		'jobRelevance': feedback.job_relevance,
+		'keyTakeaways': feedback.key_takeaways,
+		'logisticsRatings': feedback.logistics_ratings,
+		'logisticsAdditionalFeedback': feedback.logistics_feedback,
+		'sessionRelevance': feedback.session_relevance,
+		'sessionsAdditionalComments': feedback.session_comments,
+		'overallFeedback': feedback.overall_feedback,
+		'createdAt': feedback.created_at.isoformat(),
 	}
 
 
@@ -164,6 +232,19 @@ def _map_payload(payload):
 	}
 
 
+def _map_feedback_payload(payload):
+	return {
+		'event_satisfaction': payload.get('eventSatisfaction'),
+		'job_relevance': payload.get('jobRelevance'),
+		'key_takeaways': payload.get('keyTakeaways', ''),
+		'logistics_ratings': payload.get('logisticsRatings'),
+		'logistics_feedback': payload.get('logisticsAdditionalFeedback', ''),
+		'session_relevance': payload.get('sessionRelevance'),
+		'session_comments': payload.get('sessionsAdditionalComments', ''),
+		'overall_feedback': payload.get('overallFeedback', ''),
+	}
+
+
 def _build_export_row(registration: EventRegistration):
 	return {
 		'reference': _format_reference(registration),
@@ -194,6 +275,21 @@ def _build_export_row(registration: EventRegistration):
 	}
 
 
+def _build_feedback_export_row(feedback: EventFeedback):
+	return {
+		'reference': _format_feedback_reference(feedback),
+		'event_satisfaction': feedback.event_satisfaction,
+		'job_relevance': feedback.job_relevance,
+		'key_takeaways': feedback.key_takeaways,
+		'logistics_ratings': json.dumps(feedback.logistics_ratings, ensure_ascii=True),
+		'logistics_feedback': feedback.logistics_feedback,
+		'session_relevance': json.dumps(feedback.session_relevance, ensure_ascii=True),
+		'session_comments': feedback.session_comments,
+		'overall_feedback': feedback.overall_feedback,
+		'submitted_at': feedback.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+	}
+
+
 @csrf_exempt
 @require_http_methods(['POST', 'OPTIONS'])
 def register_api(request):
@@ -217,6 +313,30 @@ def register_api(request):
 		'firstName': registration.first_name,
 		'lastName': registration.last_name,
 		'email': registration.email,
+	}
+	return _with_cors_headers(JsonResponse(response_payload, status=201))
+
+
+@csrf_exempt
+@require_http_methods(['POST', 'OPTIONS'])
+def feedback_api(request):
+	if request.method == 'OPTIONS':
+		return _with_cors_headers(JsonResponse({'ok': True}))
+
+	try:
+		payload = json.loads(request.body.decode('utf-8'))
+	except (json.JSONDecodeError, UnicodeDecodeError):
+		return _with_cors_headers(JsonResponse({'error': 'Invalid JSON payload.'}, status=400))
+
+	form = EventFeedbackForm(_map_feedback_payload(payload))
+	if not form.is_valid():
+		return _with_cors_headers(JsonResponse({'success': False, 'errors': form.errors}, status=400))
+
+	feedback = form.save()
+	response_payload = {
+		'success': True,
+		'reference': _format_feedback_reference(feedback),
+		'createdAt': feedback.created_at.isoformat(),
 	}
 	return _with_cors_headers(JsonResponse(response_payload, status=201))
 
@@ -277,6 +397,72 @@ def manage_registrations_api(request):
 	paged_results = registrations[start_index:end_index]
 
 	results = [_serialize_registration(item) for item in paged_results]
+	return JsonResponse(
+		{
+			'results': results,
+			'pagination': {
+				'page': page,
+				'pageSize': page_size,
+				'total': total,
+				'totalPages': total_pages,
+				'hasNext': page < total_pages,
+				'hasPrevious': page > 1,
+			},
+		}
+	)
+
+
+@require_http_methods(['GET'])
+def manage_feedback_api(request):
+	feedback_items = EventFeedback.objects.all()
+
+	search_query = request.GET.get('q', '').strip()
+	if search_query:
+		feedback_items = feedback_items.filter(
+			Q(key_takeaways__icontains=search_query)
+			| Q(logistics_feedback__icontains=search_query)
+			| Q(session_comments__icontains=search_query)
+			| Q(overall_feedback__icontains=search_query)
+		)
+
+	date_from = request.GET.get('date_from', '').strip()
+	if date_from:
+		try:
+			parsed_date_from = datetime.strptime(date_from, '%Y-%m-%d').date()
+			feedback_items = feedback_items.filter(created_at__date__gte=parsed_date_from)
+		except ValueError:
+			pass
+
+	date_to = request.GET.get('date_to', '').strip()
+	if date_to:
+		try:
+			parsed_date_to = datetime.strptime(date_to, '%Y-%m-%d').date()
+			feedback_items = feedback_items.filter(created_at__date__lte=parsed_date_to)
+		except ValueError:
+			pass
+
+	try:
+		page = int(request.GET.get('page', '1'))
+	except ValueError:
+		page = 1
+	page = max(page, 1)
+
+	try:
+		page_size = int(request.GET.get('page_size', '10'))
+	except ValueError:
+		page_size = 10
+	page_size = min(max(page_size, 1), 100)
+
+	total = feedback_items.count()
+	total_pages = max((total + page_size - 1) // page_size, 1)
+	if page > total_pages:
+		page = total_pages
+
+	start_index = (page - 1) * page_size
+	end_index = start_index + page_size
+	paged_results = feedback_items[start_index:end_index]
+
+	results = [_serialize_feedback(item) for item in paged_results]
 	return JsonResponse(
 		{
 			'results': results,
@@ -369,4 +555,84 @@ def export_registrations_xlsx(request):
 		content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 	)
 	response['Content-Disposition'] = 'attachment; filename="event_registrations.xlsx"'
+	return response
+
+
+@require_http_methods(['GET'])
+def export_feedback_xlsx(request):
+	theme_key = request.GET.get('theme', 'mint').strip().lower()
+	themes = FEEDBACK_XLSX_EXPORT_CONFIG.get('themes', {})
+	theme = themes.get(theme_key, themes.get('mint', {}))
+	columns = FEEDBACK_XLSX_EXPORT_CONFIG.get('columns', [])
+	header_config = FEEDBACK_XLSX_EXPORT_CONFIG.get('header', {})
+	row_config = FEEDBACK_XLSX_EXPORT_CONFIG.get('rows', {})
+
+	header_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('headerFill', '3F8657')}")
+	odd_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('oddRowFill', 'F6FBF8')}")
+	even_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('evenRowFill', 'ECF5EF')}")
+	border_side = Side(style='thin', color=f"FF{theme.get('border', 'BFD3C5')}")
+	cell_border = Border(left=border_side, right=border_side, top=border_side, bottom=border_side)
+
+	header_font = Font(
+		name=header_config.get('font', {}).get('name', 'Calibri'),
+		size=header_config.get('font', {}).get('size', 11),
+		bold=header_config.get('font', {}).get('bold', True),
+		color=f"FF{header_config.get('font', {}).get('color', 'FFFFFF')}",
+	)
+	data_font = Font(
+		name=row_config.get('font', {}).get('name', 'Calibri'),
+		size=row_config.get('font', {}).get('size', 10),
+		bold=row_config.get('font', {}).get('bold', False),
+		color=f"FF{row_config.get('font', {}).get('color', '1F4736')}",
+	)
+
+	header_alignment = Alignment(
+		horizontal=header_config.get('alignment', {}).get('horizontal', 'left'),
+		vertical=header_config.get('alignment', {}).get('vertical', 'center'),
+		wrap_text=header_config.get('alignment', {}).get('wrapText', True),
+		indent=header_config.get('alignment', {}).get('indent', 0),
+	)
+	data_alignment = Alignment(
+		horizontal=row_config.get('alignment', {}).get('horizontal', 'left'),
+		vertical=row_config.get('alignment', {}).get('vertical', 'top'),
+		wrap_text=row_config.get('alignment', {}).get('wrapText', True),
+		indent=row_config.get('alignment', {}).get('indent', 1),
+	)
+
+	workbook = Workbook()
+	sheet = workbook.active
+	sheet.title = FEEDBACK_XLSX_EXPORT_CONFIG.get('sheetName', 'Feedback')
+	sheet.freeze_panes = 'A2'
+	sheet.row_dimensions[1].height = header_config.get('height', 26)
+
+	for index, column in enumerate(columns, start=1):
+		cell = sheet.cell(row=1, column=index, value=column.get('header', ''))
+		cell.fill = header_fill
+		cell.font = header_font
+		cell.alignment = header_alignment
+		cell.border = cell_border
+		sheet.column_dimensions[get_column_letter(index)].width = column.get('width', 18)
+
+	for row_index, feedback in enumerate(EventFeedback.objects.all(), start=2):
+		sheet.row_dimensions[row_index].height = row_config.get('height', 24)
+		export_row = _build_feedback_export_row(feedback)
+		row_fill = odd_fill if row_index % 2 == 0 else even_fill
+
+		for column_index, column in enumerate(columns, start=1):
+			value = export_row.get(column.get('key', ''), '')
+			cell = sheet.cell(row=row_index, column=column_index, value=value)
+			cell.fill = row_fill
+			cell.font = data_font
+			cell.alignment = data_alignment
+			cell.border = cell_border
+
+	buffer = io.BytesIO()
+	workbook.save(buffer)
+	buffer.seek(0)
+
+	response = HttpResponse(
+		buffer.getvalue(),
+		content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+	)
+	response['Content-Disposition'] = 'attachment; filename="event_feedback.xlsx"'
 	return response
