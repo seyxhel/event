@@ -37,6 +37,7 @@ const HERO_HIGHLIGHTS: Array<{
 
 export function SuccessPage() {
   const location = useLocation();
+  const exportReceiptRef = React.useRef<HTMLElement | null>(null);
 
   const state = (location.state as {
     mode?: 'registration' | 'feedback';
@@ -200,7 +201,7 @@ export function SuccessPage() {
             <p className="mt-2 text-sm text-[#4e6b5c] md:text-base">{thankYouNextStep}</p>
           </article>
 
-        </motion.section>
+        </section>
       </div>
     </div>
   );

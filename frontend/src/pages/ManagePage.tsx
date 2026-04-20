@@ -84,7 +84,7 @@ export function ManagePage() {
   const [selected, setSelected] = useState<FeedbackRow | null>(null);
   const [pagination, setPagination] = useState<PaginationMeta>({
     page: 1,
-    pageSize: PAGE_SIZE,
+    pageSize,
     total: 0,
     totalPages: 1,
     hasNext: false,
