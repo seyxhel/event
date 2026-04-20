@@ -1,50 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  Download,
-  Eye,
-  Search,
-  Users,
-  X
-} from 'lucide-react';
+import { Download, Eye, MessageSquare, Search, Star, X } from 'lucide-react';
 import { apiUrl } from '../api';
 
-type RegistrationRow = {
+type FeedbackRow = {
   id: number;
   reference: string;
-  privacyAccepted: boolean;
-  email: string;
-  lastName: string;
-  firstName: string;
-  middleInitial: string;
-  designation: string;
-  mobileNo: string;
-  viberNo: string;
-  gcashNo: string;
-  personalEmail: string;
-  linkedinAccount: string;
-  facebookAccount: string;
-  messengerAccount: string;
-  companyName: string;
-  companyCategory: string;
-  industryType: string;
-  companyAddress: string;
-  companyLandline: string;
-  companyEmail: string;
-  bringCompanyId: boolean;
-  vehicleType: string;
-  willCome: boolean;
-  attendeeCount: number;
-  attendeeDetails: Array<{
-    email: string;
-    middleInitial: string;
-    designation: string;
-    firstName: string;
-    lastName: string;
-    mobileNo: string;
-    viberNo: string;
-    gcashNo: string;
-    personalEmail: string;
-  }>;
+  personalCompanyInfoConsent: boolean | null;
+  eventSatisfaction: number;
+  jobRelevance: number;
+  keyTakeaways: string;
+  logisticsRatings: Record<string, string>;
+  logisticsAdditionalFeedback: string;
+  sessionRelevance: Record<string, string>;
+  sessionsAdditionalComments: string;
+  overallFeedback: string;
   createdAt: string;
 };
 
@@ -57,26 +26,69 @@ type PaginationMeta = {
   hasPrevious: boolean;
 };
 
-const LIST_API = apiUrl('/api/manage/registrations/');
-const XLSX_EXPORT_URL = apiUrl('/api/manage/export/xlsx/?theme=mint');
-const PAGE_SIZE = 10;
+const LIST_API = apiUrl('/api/manage/feedback/');
+const XLSX_EXPORT_URL = apiUrl('/api/manage/export/feedback-xlsx/?theme=mint');
+
+const SATISFACTION_LABELS: Record<string, string> = {
+  '1': 'Very Dissatisfied',
+  '2': 'Dissatisfied',
+  '3': 'Neutral',
+  '4': 'Satisfied',
+  '5': 'Very Satisfied',
+  na: 'N/A',
+};
+
+const SESSION_LABELS: Record<string, string> = {
+  not_relevant: 'Not relevant',
+  relevant: 'Relevant',
+  very_relevant: 'Very relevant',
+  did_not_attend: 'Did not attend',
+};
+
+const LOGISTICS_ITEM_LABELS: Record<string, string> = {
+  accommodation: 'Accommodation',
+  welcomeKit: 'Welcome kit',
+  communication: 'Communication',
+  transportation: 'Transportation',
+  welcomeActivity: 'Welcome activity',
+  venue: 'Venue',
+  activities: 'Activities',
+  closingCeremony: 'Closing ceremony',
+};
+
+const SESSION_ITEM_LABELS: Record<string, string> = {
+  welcomeActivity: 'Welcome activity',
+  speaker1: 'Speaker #1',
+  activity1: 'Activity #1',
+  speaker2: 'Speaker #2',
+  activity2: 'Activity #2',
+  closingActivity: 'Closing activity',
+};
+
+function excerpt(value: string, limit = 96): string {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return '-';
+  }
+  return trimmed.length > limit ? `${trimmed.slice(0, limit)}...` : trimmed;
+}
 
 export function ManagePage() {
-  const [rows, setRows] = useState<RegistrationRow[]>([]);
+  const [rows, setRows] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(PAGE_SIZE);
-  const [selected, setSelected] = useState<RegistrationRow | null>(null);
+  const [pageSize, setPageSize] = useState(10);
+  const [selected, setSelected] = useState<FeedbackRow | null>(null);
   const [pagination, setPagination] = useState<PaginationMeta>({
     page: 1,
     pageSize: PAGE_SIZE,
     total: 0,
     totalPages: 1,
     hasNext: false,
-    hasPrevious: false
+    hasPrevious: false,
   });
 
   useEffect(() => {
@@ -105,7 +117,7 @@ export function ManagePage() {
 
         const response = await fetch(`${LIST_API}?${params.toString()}`);
         if (!response.ok) {
-          setError('Could not load registrations.');
+          setError('Could not load feedback records.');
           return;
         }
 
@@ -126,11 +138,11 @@ export function ManagePage() {
             total: 0,
             totalPages: 1,
             hasNext: false,
-            hasPrevious: false
+            hasPrevious: false,
           }
         );
-      } catch (_e) {
-        setError('Could not load registrations.');
+      } catch (_error) {
+        setError('Could not load feedback records.');
       } finally {
         setLoading(false);
       }
@@ -139,9 +151,24 @@ export function ManagePage() {
     load();
   }, [page, pageSize, searchTerm]);
 
-  const confirmedCount = useMemo(() => rows.filter((row) => row.willCome).length, [rows]);
-  const attendeeTotalOnPage = useMemo(
-    () => rows.reduce((sum, row) => sum + (row.willCome ? row.attendeeCount : 0), 0),
+  const averageEventSatisfaction = useMemo(() => {
+    if (!rows.length) {
+      return '0.0';
+    }
+    const total = rows.reduce((sum, row) => sum + row.eventSatisfaction, 0);
+    return (total / rows.length).toFixed(1);
+  }, [rows]);
+
+  const averageJobRelevance = useMemo(() => {
+    if (!rows.length) {
+      return '0.0';
+    }
+    const total = rows.reduce((sum, row) => sum + row.jobRelevance, 0);
+    return (total / rows.length).toFixed(1);
+  }, [rows]);
+
+  const withLogisticsFeedbackCount = useMemo(
+    () => rows.filter((row) => row.logisticsAdditionalFeedback.trim().length > 0).length,
     [rows]
   );
 
@@ -164,10 +191,10 @@ export function ManagePage() {
             <div>
               <p className="meta-badge inline-flex">Admin Console</p>
               <h1 className="display-font mt-3 text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
-                Registration Management
+                Feedback Management
               </h1>
               <p className="mt-2 text-sm text-[#5f7568] md:text-base">
-                Track registrations, review attendee details, and export event records.
+                Review submitted feedback, inspect ratings, and export response records.
               </p>
             </div>
 
@@ -184,9 +211,9 @@ export function ManagePage() {
         </header>
 
         <section className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3 print:hidden">
-          <StatCard label="Total Matching Records" value={pagination.total} accent="lime" />
-          <StatCard label="Attending On This Page" value={confirmedCount} accent="gold" />
-          <StatCard label="Attendee Seats On Page" value={attendeeTotalOnPage} accent="mint" />
+          <StatCard label="Total Matching Feedback" value={pagination.total} accent="lime" />
+          <StatCard label="Average Event Satisfaction" value={`${averageEventSatisfaction} / 5`} accent="gold" />
+          <StatCard label="With Logistics Comments" value={withLogisticsFeedbackCount} accent="mint" />
         </section>
 
         <section className="glass-panel section-reveal mb-4 overflow-hidden sm:mb-5">
@@ -196,7 +223,7 @@ export function ManagePage() {
                 <Search className="pointer-events-none absolute left-5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6f8b7d]" />
                 <input
                   type="text"
-                  placeholder="Search name, email, company..."
+                  placeholder="Search comments and takeaways..."
                   value={searchDraft}
                   onChange={(e) => setSearchDraft(e.target.value)}
                   className="form-input"
@@ -225,7 +252,7 @@ export function ManagePage() {
             </form>
           </div>
 
-          {loading && <p className="p-6 text-[#5f7568]">Loading registrations...</p>}
+          {loading && <p className="p-6 text-[#5f7568]">Loading feedback...</p>}
           {!loading && error && <p className="p-6 text-[#b64a4a]">{error}</p>}
 
           {!loading && !error && (
@@ -234,9 +261,9 @@ export function ManagePage() {
                 <thead>
                   <tr className="border-b border-[#c8dbcf] bg-[#f1f7f2] text-[0.68rem] uppercase tracking-[0.08em] text-[#456253] sm:text-[0.72rem]">
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Ref #</th>
-                    <th className="px-3 py-2.5 sm:px-5 sm:py-3">Name</th>
-                    <th className="px-3 py-2.5 sm:px-5 sm:py-3">Company</th>
-                    <th className="px-3 py-2.5 sm:px-5 sm:py-3">Contact</th>
+                    <th className="px-3 py-2.5 sm:px-5 sm:py-3">Event Satisfaction</th>
+                    <th className="px-3 py-2.5 sm:px-5 sm:py-3">Job Relevance</th>
+                    <th className="px-3 py-2.5 sm:px-5 sm:py-3">Logistics Feedback</th>
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Date</th>
                     <th className="px-3 py-2.5 text-center sm:px-5 sm:py-3">Action</th>
                   </tr>
@@ -244,32 +271,35 @@ export function ManagePage() {
 
                 <tbody>
                   {rows.length > 0 ? (
-                    rows.map((reg, index) => (
+                    rows.map((feedback, index) => (
                       <tr
-                        key={reg.id}
+                        key={feedback.id}
                         className={`border-b border-[#d8e6dc] text-[#244c3a] transition-colors duration-150 ${
                           index % 2 === 0 ? 'bg-[#fbfdfb]' : 'bg-[#f3f8f4]'
                         } hover:bg-[#eaf3ed]`}
                       >
-                        <td className="px-3 py-2.5 font-mono text-xs sm:px-5 sm:py-3 md:text-sm">{reg.reference}</td>
-                        <td className="px-3 py-2.5 sm:px-5 sm:py-3">
-                          <p className="font-semibold text-[#1f4736]">
-                            {reg.firstName} {reg.lastName}
-                          </p>
-                          <p className="text-xs text-[#4f6a5d]">{reg.email}</p>
+                        <td className="px-3 py-2.5 font-mono text-xs sm:px-5 sm:py-3 md:text-sm">
+                          {feedback.reference}
                         </td>
                         <td className="px-3 py-2.5 sm:px-5 sm:py-3">
-                          <p>{reg.companyName || '-'}</p>
-                          <p className="text-xs text-[#4f6a5d]">{reg.designation || '-'}</p>
+                          <p className="font-semibold text-[#1f4736]">{feedback.eventSatisfaction} / 5</p>
+                          <p className="text-xs text-[#4f6a5d]">{SATISFACTION_LABELS[String(feedback.eventSatisfaction)]}</p>
                         </td>
-                        <td className="px-3 py-2.5 text-[#305643] sm:px-5 sm:py-3">{reg.mobileNo || '-'}</td>
+                        <td className="px-3 py-2.5 sm:px-5 sm:py-3">
+                          <p className="font-semibold text-[#1f4736]">{feedback.jobRelevance} / 5</p>
+                          <p className="text-xs text-[#4f6a5d]">{SATISFACTION_LABELS[String(feedback.jobRelevance)]}</p>
+                        </td>
+                        <td className="px-3 py-2.5 sm:px-5 sm:py-3">
+                          <p>{excerpt(feedback.logisticsAdditionalFeedback, 90)}</p>
+                          <p className="text-xs text-[#4f6a5d]">{excerpt(feedback.keyTakeaways, 90)}</p>
+                        </td>
                         <td className="px-3 py-2.5 text-[#4f6a5d] sm:px-5 sm:py-3">
-                          {new Date(reg.createdAt).toLocaleDateString()}
+                          {new Date(feedback.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-3 py-2.5 text-center sm:px-5 sm:py-3">
                           <button
                             type="button"
-                            onClick={() => setSelected(reg)}
+                            onClick={() => setSelected(feedback)}
                             className="secondary-btn inline-flex items-center justify-center p-2"
                             aria-label="View details"
                             title="View details"
@@ -282,7 +312,7 @@ export function ManagePage() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-3 py-8 text-center text-[#5f7568] sm:px-5 sm:py-10">
-                        No registrations found.
+                        No feedback found.
                       </td>
                     </tr>
                   )}
@@ -294,7 +324,7 @@ export function ManagePage() {
 
         <footer className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
           <p className="text-sm text-[#5f7568]">
-            Page {pagination.page} of {pagination.totalPages} | Total: {pagination.total}
+            Page {pagination.page} of {pagination.totalPages} | Total: {pagination.total} | Avg Job Relevance: {averageJobRelevance}/5
           </p>
 
           <div className="flex items-center gap-2">
@@ -329,7 +359,7 @@ export function ManagePage() {
           >
             <header className="sticky top-0 border-b border-[#cadbcf]/90 bg-[#ffffff]/95 px-4 py-3.5 backdrop-blur sm:px-5 sm:py-4">
               <div className="flex items-center justify-between gap-2">
-                <h2 className="display-font text-2xl text-[#1f4736] sm:text-3xl">Registration Details</h2>
+                <h2 className="display-font text-2xl text-[#1f4736] sm:text-3xl">Feedback Details</h2>
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
@@ -344,55 +374,50 @@ export function ManagePage() {
             <div className="grid grid-cols-1 gap-3 p-4 text-xs sm:gap-4 sm:p-5 sm:text-sm md:grid-cols-2 md:text-base">
               <Detail label="Reference" value={selected.reference} />
               <Detail label="Submitted" value={new Date(selected.createdAt).toLocaleString()} />
-              <Detail label="Privacy Accepted" value={selected.privacyAccepted ? 'Yes' : 'No'} />
-              <Detail label="First Name" value={selected.firstName} />
-              <Detail label="Last Name" value={selected.lastName} />
-              <Detail label="Middle Initial" value={selected.middleInitial} />
-              <Detail label="Designation" value={selected.designation} />
-              <Detail label="Email" value={selected.email} />
-              <Detail label="Personal Email" value={selected.personalEmail} />
-              <Detail label="LinkedIn" value={selected.linkedinAccount} />
-              <Detail label="Facebook" value={selected.facebookAccount} />
-              <Detail label="Messenger" value={selected.messengerAccount} />
-              <Detail label="Mobile/CP No." value={selected.mobileNo} />
-              <Detail label="Viber No." value={selected.viberNo} />
-              <Detail label="G-Cash No." value={selected.gcashNo} />
-              <Detail label="Vehicle Type" value={selected.vehicleType} />
-              <Detail label="Company Name" value={selected.companyName} />
               <Detail
-                label="Company Category"
-                value={selected.companyCategory ? selected.companyCategory[0].toUpperCase() + selected.companyCategory.slice(1) : ''}
+                label="Personal & Company Info Consent"
+                value={
+                  selected.personalCompanyInfoConsent === null
+                    ? 'Not provided'
+                    : selected.personalCompanyInfoConsent
+                    ? 'Agree'
+                    : 'Do not agree'
+                }
               />
-              <Detail label="Industry Type" value={selected.industryType} />
-              <Detail label="Company Landline" value={selected.companyLandline} />
-              <Detail label="Company Email" value={selected.companyEmail} />
               <Detail
-                label="Company Address"
-                value={selected.companyAddress}
+                label="Event Satisfaction"
+                value={`${selected.eventSatisfaction} - ${SATISFACTION_LABELS[String(selected.eventSatisfaction)] || '-'}`}
+              />
+              <Detail
+                label="Job Relevance"
+                value={`${selected.jobRelevance} - ${SATISFACTION_LABELS[String(selected.jobRelevance)] || '-'}`}
+              />
+              <Detail label="Key Takeaways" value={selected.keyTakeaways || '-'} className="md:col-span-2" />
+              <Detail
+                label="Additional Logistics Feedback"
+                value={selected.logisticsAdditionalFeedback || '-'}
                 className="md:col-span-2"
               />
+              <Detail
+                label="Session Comments"
+                value={selected.sessionsAdditionalComments || '-'}
+                className="md:col-span-2"
+              />
+              <Detail label="Overall Feedback" value={selected.overallFeedback || '-'} className="md:col-span-2" />
 
-              {selected.attendeeDetails?.length > 0 && (
-                <article className="glass-panel-soft border p-3 sm:p-3.5 md:col-span-2">
-                  <p className="form-label text-[0.72rem] text-[#5f7568]">Additional Attendee Details</p>
-                  <div className="mt-2 space-y-2 text-[#1f4736]">
-                    {selected.attendeeDetails.map((attendee, index) => (
-                      <div key={`${attendee.email}-${index}`} className="rounded-lg border border-[#d7e5dc] bg-[#f8fbf9] p-2.5">
-                        <p className="font-semibold">
-                          Attendee {index + 2}: {attendee.firstName} {attendee.lastName}
-                        </p>
-                        <p className="text-sm">Middle Initial: {attendee.middleInitial || '-'}</p>
-                        <p className="text-sm">Designation: {attendee.designation || '-'}</p>
-                        <p className="text-sm">Email: {attendee.email || '-'}</p>
-                        <p className="text-sm">Personal Email: {attendee.personalEmail || '-'}</p>
-                        <p className="text-sm">Mobile: {attendee.mobileNo || '-'}</p>
-                        <p className="text-sm">Viber: {attendee.viberNo || '-'}</p>
-                        <p className="text-sm">GCash: {attendee.gcashNo || '-'}</p>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              )}
+              <RatingPanel
+                title="Logistics Ratings"
+                ratings={selected.logisticsRatings}
+                itemLabels={LOGISTICS_ITEM_LABELS}
+                valueLabels={SATISFACTION_LABELS}
+              />
+
+              <RatingPanel
+                title="Session Relevance"
+                ratings={selected.sessionRelevance}
+                itemLabels={SESSION_ITEM_LABELS}
+                valueLabels={SESSION_LABELS}
+              />
             </div>
           </section>
         </div>
@@ -405,7 +430,7 @@ export function ManagePage() {
               body { background: white !important; }
               .glass-panel, .glass-panel-soft { box-shadow: none !important; }
             }
-          `
+          `,
         }}
       />
     </div>
@@ -414,7 +439,7 @@ export function ManagePage() {
 
 type StatCardProps = {
   label: string;
-  value: number;
+  value: string | number;
   accent: 'lime' | 'gold' | 'mint';
 };
 
@@ -430,7 +455,7 @@ function StatCard({ label, value, accent }: StatCardProps) {
     <article className={`glass-panel-soft hover-lift section-reveal border bg-gradient-to-br p-3.5 sm:p-4 ${accentClass}`}>
       <p className="form-label text-[0.72rem] text-[#5f7568]">{label}</p>
       <p className="display-font mt-2 flex items-center gap-2 text-3xl text-[#1f4736] sm:text-4xl">
-        <Users className="h-6 w-6 text-[#3f8657]" />
+        <Star className="h-6 w-6 text-[#3f8657]" />
         {value}
       </p>
     </article>
@@ -439,7 +464,7 @@ function StatCard({ label, value, accent }: StatCardProps) {
 
 type DetailProps = {
   label: string;
-  value: string;
+  value: React.ReactNode;
   className?: string;
 };
 
@@ -448,6 +473,47 @@ function Detail({ label, value, className = '' }: DetailProps) {
     <article className={`glass-panel-soft border p-3 sm:p-3.5 ${className}`}>
       <p className="form-label text-[0.72rem] text-[#5f7568]">{label}</p>
       <p className="mt-1 break-words text-[#1f4736]">{value || '-'}</p>
+    </article>
+  );
+}
+
+type RatingPanelProps = {
+  title: string;
+  ratings: Record<string, string>;
+  itemLabels: Record<string, string>;
+  valueLabels: Record<string, string>;
+};
+
+function RatingPanel({ title, ratings, itemLabels, valueLabels }: RatingPanelProps) {
+  const items = Object.entries(ratings || {});
+
+  return (
+    <article className="glass-panel-soft border p-3 sm:p-3.5 md:col-span-2">
+      <p className="display-font text-lg text-[#1f4736] sm:text-xl">{title}</p>
+
+      {items.length === 0 ? (
+        <p className="mt-2 text-sm text-[#5f7568]">No ratings submitted.</p>
+      ) : (
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {items.map(([key, rawValue]) => {
+            const normalizedValue = String(rawValue);
+            const itemLabel = itemLabels[key] || key;
+            const valueLabel = valueLabels[normalizedValue] || normalizedValue;
+
+            return (
+              <div key={`${title}-${key}`} className="rounded-lg border border-[#d7e5dc] bg-[#f8fbf9] px-2.5 py-2">
+                <p className="text-sm font-semibold text-[#244c3a]">{itemLabel}</p>
+                <p className="text-sm text-[#4f6a5d]">{valueLabel}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#bfd5c7] bg-[#f3f8f4] px-2.5 py-1 text-xs text-[#4f6a5d]">
+        <MessageSquare className="h-3.5 w-3.5" />
+        Feedback response scale summary
+      </div>
     </article>
   );
 }

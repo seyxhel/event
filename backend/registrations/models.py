@@ -33,3 +33,22 @@ class EventRegistration(models.Model):
 
 	def __str__(self):
 		return f"{self.last_name}, {self.first_name} ({self.company_name})"
+
+
+class EventFeedback(models.Model):
+	personal_company_info_consent = models.BooleanField(null=True, blank=True)
+	event_satisfaction = models.PositiveSmallIntegerField()
+	job_relevance = models.PositiveSmallIntegerField()
+	key_takeaways = models.TextField(default='', blank=True)
+	logistics_ratings = models.JSONField(default=dict)
+	logistics_feedback = models.TextField()
+	session_relevance = models.JSONField(default=dict)
+	session_comments = models.TextField(default='', blank=True)
+	overall_feedback = models.TextField(default='', blank=True)
+	created_at = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		ordering = ['-created_at']
+
+	def __str__(self):
+		return f"Feedback #{self.pk}"

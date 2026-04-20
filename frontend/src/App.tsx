@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { RegistrationPage } from './pages/RegistrationPage.tsx';
-import { SuccessPage } from './pages/SuccessPage.tsx';
-import { ManagePage } from './pages/ManagePage.tsx';
+import { FeedbackPage } from './pages/RegistrationPage';
+import { SuccessPage } from './pages/SuccessPage';
+import { ManagePage } from './pages/ManagePage';
 
 export function App() {
   return (
@@ -9,7 +9,7 @@ export function App() {
       <div className="event-shell flex min-h-screen flex-col selection:bg-[#f5e9c8] selection:text-[#1d3f31]">
         <main className="relative z-10 flex-1">
           <Routes>
-            <Route path="/" element={<RegistrationPage />} />
+            <Route path="/" element={<FeedbackPage />} />
             <Route path="/success" element={<SuccessPage />} />
             <Route path="/manage" element={<ManagePage />} />
           </Routes>

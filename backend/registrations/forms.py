@@ -2,7 +2,7 @@ import re
 
 from django import forms
 
-from .models import EventRegistration
+from .models import EventFeedback, EventRegistration
 
 
 INDUSTRY_TYPE_CHOICES = (
@@ -15,6 +15,28 @@ INDUSTRY_TYPE_CHOICES = (
     ('Others', 'Others'),
 )
 INDUSTRY_TYPE_VALUES = {choice[0] for choice in INDUSTRY_TYPE_CHOICES}
+
+LOGISTICS_KEYS = {
+    'accommodation',
+    'welcomeKit',
+    'communication',
+    'transportation',
+    'welcomeActivity',
+    'venue',
+    'activities',
+    'closingCeremony',
+}
+LOGISTICS_VALUES = {'1', '2', '3', '4', '5', 'na'}
+
+SESSION_KEYS = {
+    'welcomeActivity',
+    'speaker1',
+    'activity1',
+    'speaker2',
+    'activity2',
+    'closingActivity',
+}
+SESSION_VALUES = {'not_relevant', 'relevant', 'very_relevant', 'did_not_attend'}
 
 
 class EventRegistrationForm(forms.ModelForm):
@@ -184,3 +206,105 @@ class EventRegistrationForm(forms.ModelForm):
         cleaned_data['attendee_count'] = 1
         cleaned_data['additional_attendees'] = []
         return cleaned_data
+
+
+class EventFeedbackForm(forms.ModelForm):
+    OPTIONAL_FIELDS = (
+        'logistics_feedback',
+    )
+
+    class Meta:
+        model = EventFeedback
+        fields = [
+            'personal_company_info_consent',
+            'event_satisfaction',
+            'job_relevance',
+            'key_takeaways',
+            'logistics_ratings',
+            'logistics_feedback',
+            'session_relevance',
+            'session_comments',
+            'overall_feedback',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name in self.OPTIONAL_FIELDS:
+            self.fields[field_name].required = False
+
+    def clean_event_satisfaction(self):
+        event_satisfaction = self.cleaned_data.get('event_satisfaction')
+        if event_satisfaction not in {1, 2, 3, 4, 5}:
+            raise forms.ValidationError('Event satisfaction must be between 1 and 5.')
+        return event_satisfaction
+
+    def clean_personal_company_info_consent(self):
+        consent = self.cleaned_data.get('personal_company_info_consent')
+        if consent is None:
+            raise forms.ValidationError('Please select your consent option.')
+        return consent
+
+    def clean_job_relevance(self):
+        job_relevance = self.cleaned_data.get('job_relevance')
+        if job_relevance not in {1, 2, 3, 4, 5}:
+            raise forms.ValidationError('Job relevance must be between 1 and 5.')
+        return job_relevance
+
+    def clean_logistics_feedback(self):
+        logistics_feedback = (self.cleaned_data.get('logistics_feedback') or '').strip()
+        return logistics_feedback
+
+    def clean_logistics_ratings(self):
+        raw_ratings = self.cleaned_data.get('logistics_ratings')
+        if not isinstance(raw_ratings, dict):
+            raise forms.ValidationError('Logistics ratings must be an object.')
+
+        rating_keys = set(raw_ratings.keys())
+        missing_keys = sorted(LOGISTICS_KEYS - rating_keys)
+        if missing_keys:
+            raise forms.ValidationError('Please rate every logistics item.')
+
+        unexpected_keys = sorted(rating_keys - LOGISTICS_KEYS)
+        if unexpected_keys:
+            raise forms.ValidationError('Unexpected logistics items were submitted.')
+
+        normalized = {}
+        for key, value in raw_ratings.items():
+            normalized_value = str(value).strip().lower()
+            if normalized_value not in LOGISTICS_VALUES:
+                raise forms.ValidationError('Each logistics rating must be 1, 2, 3, 4, 5, or N/A.')
+            normalized[key] = normalized_value
+
+        return normalized
+
+    def clean_session_relevance(self):
+        raw_relevance = self.cleaned_data.get('session_relevance')
+        if not isinstance(raw_relevance, dict):
+            raise forms.ValidationError('Session relevance must be an object.')
+
+        relevance_keys = set(raw_relevance.keys())
+        missing_keys = sorted(SESSION_KEYS - relevance_keys)
+        if missing_keys:
+            raise forms.ValidationError('Please rate every session item.')
+
+        unexpected_keys = sorted(relevance_keys - SESSION_KEYS)
+        if unexpected_keys:
+            raise forms.ValidationError('Unexpected session items were submitted.')
+
+        normalized = {}
+        for key, value in raw_relevance.items():
+            normalized_value = str(value).strip().lower()
+            if normalized_value not in SESSION_VALUES:
+                raise forms.ValidationError('Each session rating must use a valid relevance option.')
+            normalized[key] = normalized_value
+
+        return normalized
+
+    def clean_key_takeaways(self):
+        return (self.cleaned_data.get('key_takeaways') or '').strip()
+
+    def clean_session_comments(self):
+        return (self.cleaned_data.get('session_comments') or '').strip()
+
+    def clean_overall_feedback(self):
+        return (self.cleaned_data.get('overall_feedback') or '').strip()

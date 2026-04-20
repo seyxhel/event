@@ -1,19 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  Camera,
-  Calendar,
-  Check,
   CheckCircle2,
-  Copy,
   Cpu,
-  Download,
-  Hash,
-  Mail,
   Network,
   ShieldCheck,
-  User
 } from 'lucide-react';
 import { EVENT_DETAILS } from '../eventDetails';
 
@@ -45,149 +37,25 @@ const HERO_HIGHLIGHTS: Array<{
 
 export function SuccessPage() {
   const location = useLocation();
-  const receiptRef = useRef<HTMLElement | null>(null);
-  const exportReceiptRef = useRef<HTMLElement | null>(null);
-  const [currentDate, setCurrentDate] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const state = (location.state as {
+    mode?: 'registration' | 'feedback';
     firstName?: string;
     lastName?: string;
     email?: string;
     refNumber?: string;
+    submittedAt?: string;
   }) || null;
 
-  const fullName =
-    state?.firstName && state?.lastName ? `${state.firstName} ${state.lastName}` : 'Guest';
-  const email = state?.email || 'Not provided';
-  const refNumber = state?.refNumber || 'MAP-XXXX-XXXX';
+  const isFeedback = state?.mode !== 'registration';
 
-  useEffect(() => {
-    const now = new Date();
-    setCurrentDate(
-      now.toLocaleString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true
-      })
-    );
-  }, []);
-
-  useEffect(() => {
-    if (!copied) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      setCopied(false);
-    }, 1600);
-
-    return () => window.clearTimeout(timeout);
-  }, [copied]);
-
-  const handleCopyRef = async () => {
-    try {
-      await navigator.clipboard.writeText(refNumber);
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
-
-  const handleExportPdf = async () => {
-    if (!exportReceiptRef.current || isExportingPdf) {
-      return;
-    }
-
-    setPdfError(null);
-    setIsExportingPdf(true);
-
-    try {
-      if ('fonts' in document) {
-        await (document as Document & { fonts?: { ready?: Promise<unknown> } }).fonts?.ready;
-      }
-
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
-        import('html2canvas'),
-        import('jspdf'),
-      ]);
-
-      const canvas = await html2canvas(exportReceiptRef.current, {
-        backgroundColor: '#ffffff',
-        scale: Math.max(4, Math.ceil((window.devicePixelRatio || 1) * 2)),
-        useCORS: true,
-        logging: false,
-      });
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const imageData = canvas.toDataURL('image/png');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 8;
-      const maxWidth = pageWidth - margin * 2;
-      const maxHeight = pageHeight - margin * 2;
-      const imageHeight = (canvas.height * maxWidth) / canvas.width;
-
-      if (imageHeight <= maxHeight) {
-        pdf.addImage(imageData, 'PNG', margin, margin, maxWidth, imageHeight);
-      } else {
-        const sliceCanvas = document.createElement('canvas');
-        const sliceContext = sliceCanvas.getContext('2d');
-        if (!sliceContext) {
-          throw new Error('Unable to prepare PDF canvas slices.');
-        }
-
-        const pxPerMm = canvas.width / maxWidth;
-        const sliceHeightPx = Math.floor(maxHeight * pxPerMm);
-        sliceCanvas.width = canvas.width;
-
-        let renderedPx = 0;
-        while (renderedPx < canvas.height) {
-          const currentSliceHeight = Math.min(sliceHeightPx, canvas.height - renderedPx);
-          sliceCanvas.height = currentSliceHeight;
-          sliceContext.clearRect(0, 0, sliceCanvas.width, currentSliceHeight);
-          sliceContext.drawImage(
-            canvas,
-            0,
-            renderedPx,
-            canvas.width,
-            currentSliceHeight,
-            0,
-            0,
-            canvas.width,
-            currentSliceHeight
-          );
-
-          const sliceData = sliceCanvas.toDataURL('image/png');
-          const renderedHeightMm = currentSliceHeight / pxPerMm;
-          pdf.addImage(sliceData, 'PNG', margin, margin, maxWidth, renderedHeightMm);
-
-          renderedPx += currentSliceHeight;
-          if (renderedPx < canvas.height) {
-            pdf.addPage();
-          }
-        }
-      }
-
-      const safeRef = refNumber.replace(/[^a-zA-Z0-9_-]+/g, '-');
-      pdf.save(`registration-${safeRef}.pdf`);
-    } catch (error) {
-      console.error(error);
-      setPdfError('Unable to export PDF right now. Please try again.');
-    } finally {
-      setIsExportingPdf(false);
-    }
-  };
+  const thankYouTitle = isFeedback ? 'Thank You for Your Feedback' : 'Thank You for Registering';
+  const thankYouMessage = isFeedback
+    ? 'Thank you for completing the feedback form. Your insights help us improve future events, sessions, and logistics.'
+    : 'We are excited to welcome you at the event. Your registration has been recorded successfully.';
+  const thankYouNextStep = isFeedback
+    ? 'Please keep your reference number for any follow-up from our organizing team.'
+    : 'Please save your reference number and keep this confirmation page for event day check-in.';
 
   return (
     <div className="min-h-screen pb-14 pt-6 sm:pb-16 sm:pt-8">
@@ -274,7 +142,6 @@ export function SuccessPage() {
 
       <div className="relative z-10 mx-auto mt-5 max-w-4xl px-3 sm:mt-6 sm:px-6 lg:px-8">
         <motion.section
-          ref={receiptRef}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38 }}
@@ -282,116 +149,25 @@ export function SuccessPage() {
         >
           <div className="pointer-events-none absolute left-0 top-0 h-1.5 w-full bg-gradient-to-r from-[#b9923d] via-[#3f8657] to-[#b9923d]" />
 
-          <button
-            type="button"
-            onClick={handleExportPdf}
-            disabled={isExportingPdf}
-            data-html2canvas-ignore="true"
-            className="primary-btn absolute right-3 top-3 hidden items-center gap-2 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60 sm:inline-flex sm:right-7 sm:top-6 md:right-8 md:top-7"
-          >
-            <Download className="h-4 w-4" />
-            {isExportingPdf ? 'Downloading...' : 'Download Copy'}
-          </button>
-
           <div className="mb-6 sm:mb-8">
             <CheckCircle2 className="soft-float mx-auto mb-4 h-16 w-16 text-[#3f8657] sm:h-20 sm:w-20" />
             <div className="mx-auto w-full max-w-3xl">
               <h1 className="display-font text-center text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
-                Registration Successful
+                {isFeedback ? 'Feedback Submitted' : 'Registration Successful'}
               </h1>
             </div>
             <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[#5f7568] md:text-base">
-              Thank you for registering for {EVENT_DETAILS.title}: {EVENT_DETAILS.subtitle}.
+              {isFeedback
+                ? 'Thank you for completing the feedback form.'
+                : `Thank you for registering for ${EVENT_DETAILS.title}: ${EVENT_DETAILS.subtitle}.`}
             </p>
-            <div className="mt-4 flex justify-center sm:hidden" data-html2canvas-ignore="true">
-              <button
-                type="button"
-                onClick={handleExportPdf}
-                disabled={isExportingPdf}
-                className="primary-btn inline-flex items-center gap-2 px-4 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Download className="h-4 w-4" />
-                {isExportingPdf ? 'Downloading...' : 'Download Copy'}
-              </button>
-            </div>
-            {pdfError && (
-              <p className="mt-2 text-center text-xs text-[#b64a4a]" data-html2canvas-ignore="true">
-                {pdfError}
-              </p>
-            )}
           </div>
 
-          <article className="glass-panel-soft rounded-xl p-4 sm:p-5 md:p-6">
-            <h3 className="form-label mb-4">Registration Details</h3>
-
-            <div className="space-y-3 text-sm sm:space-y-4 md:text-base">
-              <DetailBlock
-                icon={<Hash className="h-5 w-5 text-[#b9923d]" />}
-                label="Reference Number"
-                value={refNumber}
-                extra={
-                  <button
-                    type="button"
-                    onClick={handleCopyRef}
-                    className="secondary-btn mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-3.5 w-3.5" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy Ref
-                      </>
-                    )}
-                  </button>
-                }
-              />
-
-              <DetailBlock
-                icon={<User className="h-5 w-5 text-[#b9923d]" />}
-                label="Registrant Name"
-                value={fullName}
-              />
-
-              <DetailBlock
-                icon={<Mail className="h-5 w-5 text-[#b9923d]" />}
-                label="Email Address"
-                value={email}
-              />
-
-              <DetailBlock
-                icon={<Calendar className="h-5 w-5 text-[#b9923d]" />}
-                label="Registration Date"
-                value={currentDate}
-              />
-            </div>
+          <article className="glass-panel-soft mt-6 rounded-xl border border-[#b8d4c4] bg-[#f4faf6] p-4 sm:mt-7 sm:p-5">
+            <h2 className="display-font text-xl text-[#1f4736] sm:text-2xl">{thankYouTitle}</h2>
+            <p className="mt-2 text-sm text-[#325846] md:text-base">{thankYouMessage}</p>
+            <p className="mt-2 text-sm text-[#4e6b5c] md:text-base">{thankYouNextStep}</p>
           </article>
-
-          <motion.article
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.12, duration: 0.32 }}
-            className="glass-panel-soft hover-lift mt-6 rounded-xl border border-[#e0c27a] bg-[#fff7e8] p-4 sm:mt-7 sm:p-5"
-          >
-            <h2 className="display-font text-xl text-[#7b5a1b] sm:text-2xl">Important Notes</h2>
-            <ul className="mt-3 space-y-2 text-left text-sm text-[#6e5320] md:text-base">
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
-                Bring either your Company ID or one valid ID on event day.
-              </li>
-              <li className="flex items-start gap-2">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
-                Please keep your email confirmation as proof of registration.
-              </li>
-              <li className="flex items-start gap-2">
-                <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#b9923d]" />
-                Take a screenshot or download a copy of this successful registration page and present it at the entrance.
-              </li>
-            </ul>
-          </motion.article>
 
         </motion.section>
       </div>
@@ -408,93 +184,23 @@ export function SuccessPage() {
             <CheckCircle2 className="mx-auto mb-4 h-16 w-16 text-[#3f8657] sm:h-20 sm:w-20" />
             <div className="mx-auto w-full max-w-3xl">
               <h1 className="display-font text-center text-3xl text-[#1f4736] sm:text-4xl md:text-5xl">
-                Registration Successful
+                {isFeedback ? 'Feedback Submitted' : 'Registration Successful'}
               </h1>
             </div>
             <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[#5f7568] md:text-base">
-              Thank you for registering for {EVENT_DETAILS.title}: {EVENT_DETAILS.subtitle}.
+              {isFeedback
+                ? 'Thank you for completing the feedback form.'
+                : `Thank you for registering for ${EVENT_DETAILS.title}: ${EVENT_DETAILS.subtitle}.`}
             </p>
           </div>
 
-          <article className="rounded-xl border border-[#cfddd2] bg-[#ffffff] p-4 sm:p-5 md:p-6">
-            <h3 className="form-label mb-4">Registration Details</h3>
-
-            <div className="space-y-3 text-sm sm:space-y-4 md:text-base">
-              <DetailBlock
-                icon={<Hash className="h-5 w-5 text-[#8a6420]" />}
-                label="Reference Number"
-                value={refNumber}
-                extra={
-                  <button
-                    type="button"
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[#c9d9cf] bg-[#f8fbf9] px-3 py-1.5 text-xs font-bold text-[#2f5f47]"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                    Copy Ref
-                  </button>
-                }
-              />
-
-              <DetailBlock
-                icon={<User className="h-5 w-5 text-[#8a6420]" />}
-                label="Registrant Name"
-                value={fullName}
-              />
-
-              <DetailBlock
-                icon={<Mail className="h-5 w-5 text-[#8a6420]" />}
-                label="Email Address"
-                value={email}
-              />
-
-              <DetailBlock
-                icon={<Calendar className="h-5 w-5 text-[#8a6420]" />}
-                label="Registration Date"
-                value={currentDate}
-              />
-            </div>
+          <article className="glass-panel-soft mt-6 rounded-xl border border-[#b8d4c4] bg-[#f4faf6] p-4 sm:mt-7 sm:p-5">
+            <h2 className="display-font text-xl text-[#1f4736] sm:text-2xl">{thankYouTitle}</h2>
+            <p className="mt-2 text-sm text-[#325846] md:text-base">{thankYouMessage}</p>
+            <p className="mt-2 text-sm text-[#4e6b5c] md:text-base">{thankYouNextStep}</p>
           </article>
 
-          <article className="mt-6 rounded-xl border border-[#cfddd2] bg-[#fff8ea] p-4 sm:mt-7 sm:p-5">
-            <h2 className="display-font text-xl text-[#7b5a1b] sm:text-2xl">Important Notes</h2>
-            <ul className="mt-3 space-y-2 text-left text-sm text-[#6e5320] md:text-base">
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
-                Bring either your Company ID or one valid ID on event day.
-              </li>
-              <li className="flex items-start gap-2">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
-                Please keep your email confirmation as proof of registration.
-              </li>
-              <li className="flex items-start gap-2">
-                <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#8a6420]" />
-                Take a screenshot or download a copy of this successful registration page and present it at the entrance.
-              </li>
-            </ul>
-          </article>
-        </section>
-      </div>
-    </div>
-  );
-}
-
-type DetailBlockProps = {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  extra?: React.ReactNode;
-};
-
-function DetailBlock({ icon, label, value, extra }: DetailBlockProps) {
-  return (
-    <div className="rounded-lg border border-[#cfded3] bg-[#f7fbf8] p-3 sm:p-3.5">
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5">{icon}</div>
-        <div>
-          <p className="form-label text-[0.72rem] text-[#5f7568]">{label}</p>
-          <p className="mt-1 break-words text-[#214736]">{value}</p>
-          {extra}
-        </div>
+        </motion.section>
       </div>
     </div>
   );
