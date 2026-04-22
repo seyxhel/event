@@ -1,5 +1,6 @@
 import io
 import json
+import re
 from datetime import datetime
 
 from django.db.models import Q
@@ -74,6 +75,137 @@ XLSX_EXPORT_CONFIG = json.loads(
 	"""
 )
 
+DUPLICATE_STATUS_RED = 'red'
+DUPLICATE_STATUS_ORANGE = 'orange'
+DUPLICATE_STATUS_YELLOW = 'yellow'
+DUPLICATE_STATUS_GREEN = 'green'
+
+DUPLICATE_STATUS_LABELS = {
+	DUPLICATE_STATUS_RED: 'Red - Same GCash and Email/Personal Email',
+	DUPLICATE_STATUS_ORANGE: 'Orange - Same Mobile/CP No.',
+	DUPLICATE_STATUS_YELLOW: 'Yellow - Same Full Name',
+	DUPLICATE_STATUS_GREEN: 'Green - Unique entry',
+}
+
+DUPLICATE_STATUS_FILLS = {
+	DUPLICATE_STATUS_RED: 'FFF1F1',
+	DUPLICATE_STATUS_ORANGE: 'FFF3E6',
+	DUPLICATE_STATUS_YELLOW: 'FFFBE0',
+	DUPLICATE_STATUS_GREEN: 'EAF8EE',
+}
+
+
+def _normalize_text(value: str) -> str:
+	if not value:
+		return ''
+	return re.sub(r'\s+', ' ', str(value).strip().lower())
+
+
+def _normalize_email(value: str) -> str:
+	email = _normalize_text(value)
+	if '@' not in email:
+		return email
+
+	local, domain = email.split('@', 1)
+	is_gmail_domain = domain in {'gmail.com', 'googlemail.com'}
+	if '+' in local and is_gmail_domain:
+		local = local.split('+', 1)[0]
+	if is_gmail_domain:
+		local = local.replace('.', '')
+	return f'{local}@{domain}'
+
+
+def _normalize_name(value: str) -> str:
+	name = _normalize_text(value)
+	return re.sub(r'[^a-z\s]', '', name)
+
+
+def _normalize_phone(value: str) -> str:
+	if not value:
+		return ''
+	digits = ''.join(ch for ch in str(value) if ch.isdigit())
+	if digits.startswith('63') and len(digits) == 12:
+		return f"0{digits[2:]}"
+	if len(digits) == 10 and not digits.startswith('0'):
+		return f"0{digits}"
+	return digits
+
+
+def _build_registration_fingerprint(registration: EventRegistration):
+	full_name = _normalize_name(
+		f"{registration.first_name} {registration.middle_initial} {registration.last_name}"
+	)
+
+	identity_emails = {
+		_normalize_email(registration.email),
+		_normalize_email(registration.personal_email_address),
+	}
+	identity_emails.discard('')
+
+	mobile_number = _normalize_phone(registration.mobile_cp_no)
+	gcash_number = _normalize_phone(registration.gcash_no)
+
+	return {
+		'fullName': full_name,
+		'identityEmails': sorted(identity_emails),
+		'mobileNo': mobile_number,
+		'gcashNo': gcash_number,
+	}
+
+
+def _evaluate_duplicate_signal(registration_id: int, fingerprints) -> tuple[int, str]:
+	current = fingerprints.get(registration_id)
+	if not current:
+		return 0, DUPLICATE_STATUS_GREEN
+
+	has_orange_match = False
+	has_yellow_match = False
+
+	for other_id, other in fingerprints.items():
+		if other_id == registration_id:
+			continue
+
+		email_overlap = bool(set(current['identityEmails']).intersection(other['identityEmails']))
+		same_gcash = bool(current['gcashNo']) and current['gcashNo'] == other['gcashNo']
+		if same_gcash and email_overlap:
+			return 100, DUPLICATE_STATUS_RED
+
+		same_mobile = bool(current['mobileNo']) and current['mobileNo'] == other['mobileNo']
+		if same_mobile:
+			has_orange_match = True
+
+		same_full_name = bool(current['fullName']) and current['fullName'] == other['fullName']
+		if same_full_name:
+			has_yellow_match = True
+
+	if has_orange_match:
+		return 80, DUPLICATE_STATUS_ORANGE
+	if has_yellow_match:
+		return 60, DUPLICATE_STATUS_YELLOW
+	return 0, DUPLICATE_STATUS_GREEN
+
+
+def _recompute_duplicate_metadata():
+	registrations = list(EventRegistration.objects.all())
+	if not registrations:
+		return
+
+	fingerprints = {
+		registration.id: _build_registration_fingerprint(registration)
+		for registration in registrations
+	}
+
+	changed = []
+	for registration in registrations:
+		score_value, status_value = _evaluate_duplicate_signal(registration.id, fingerprints)
+		if registration.duplicate_score != score_value or registration.duplicate_status != status_value:
+			registration.duplicate_score = score_value
+			registration.duplicate_status = status_value
+			changed.append(registration)
+
+	if changed:
+		EventRegistration.objects.bulk_update(changed, ['duplicate_score', 'duplicate_status'])
+
 
 def _with_cors_headers(response: JsonResponse) -> JsonResponse:
 	response['Access-Control-Allow-Origin'] = '*'
@@ -118,6 +250,8 @@ def _serialize_registration(registration: EventRegistration):
 		'willCome': registration.will_come,
 		'attendeeCount': registration.attendee_count,
 		'attendeeDetails': registration.additional_attendees,
+		'duplicateScore': registration.duplicate_score,
+		'duplicateStatus': registration.duplicate_status,
 		'createdAt': registration.created_at.isoformat(),
 		'date': registration.created_at.isoformat(),
 	}
@@ -189,6 +323,7 @@ def _build_export_row(registration: EventRegistration):
 		'will_come': 'Yes' if registration.will_come else 'No',
 		'attendee_count': registration.attendee_count,
 		'additional_attendees': json.dumps(registration.additional_attendees, ensure_ascii=True),
+		'duplicate_status': registration.duplicate_status,
 		'submitted_at': registration.created_at.strftime('%Y-%m-%d %H:%M:%S'),
 	}
 
@@ -209,6 +344,8 @@ def register_api(request):
 		return _with_cors_headers(JsonResponse({'success': False, 'errors': form.errors}, status=400))
 
 	registration = form.save()
+	_recompute_duplicate_metadata()
+	registration.refresh_from_db(fields=['duplicate_score', 'duplicate_status'])
 	response_payload = {
 		'success': True,
 		'reference': _format_reference(registration),
@@ -222,6 +359,7 @@ def register_api(request):
 
 @require_http_methods(['GET'])
 def manage_registrations_api(request):
+	_recompute_duplicate_metadata()
 	registrations = EventRegistration.objects.all()
 
 	search_query = request.GET.get('q', '').strip()
@@ -293,6 +431,7 @@ def manage_registrations_api(request):
 
 @require_http_methods(['GET'])
 def export_registrations_xlsx(request):
+	_recompute_duplicate_metadata()
 	theme_key = request.GET.get('theme', 'mint').strip().lower()
 	themes = XLSX_EXPORT_CONFIG.get('themes', {})
 	theme = themes.get(theme_key, themes.get('mint', {}))
@@ -301,8 +440,6 @@ def export_registrations_xlsx(request):
 	row_config = XLSX_EXPORT_CONFIG.get('rows', {})
 
 	header_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('headerFill', '3F8657')}")
-	odd_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('oddRowFill', 'F6FBF8')}")
-	even_fill = PatternFill(fill_type='solid', fgColor=f"FF{theme.get('evenRowFill', 'ECF5EF')}")
 	border_side = Side(style='thin', color=f"FF{theme.get('border', 'BFD3C5')}")
 	cell_border = Border(left=border_side, right=border_side, top=border_side, bottom=border_side)
 
@@ -349,7 +486,8 @@ def export_registrations_xlsx(request):
 	for row_index, registration in enumerate(EventRegistration.objects.all(), start=2):
 		sheet.row_dimensions[row_index].height = row_config.get('height', 22)
 		export_row = _build_export_row(registration)
-		row_fill = odd_fill if row_index % 2 == 0 else even_fill
+		status_fill_hex = DUPLICATE_STATUS_FILLS.get(export_row.get('duplicate_status', ''), DUPLICATE_STATUS_FILLS[DUPLICATE_STATUS_GREEN])
+		row_fill = PatternFill(fill_type='solid', fgColor=f'FF{status_fill_hex}')
 
 		for column_index, column in enumerate(columns, start=1):
 			value = export_row.get(column.get('key', ''), '')

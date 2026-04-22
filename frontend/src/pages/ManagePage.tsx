@@ -34,6 +34,7 @@ type RegistrationRow = {
   vehicleType: string;
   willCome: boolean;
   attendeeCount: number;
+  duplicateStatus: 'red' | 'orange' | 'yellow' | 'green';
   attendeeDetails: Array<{
     email: string;
     middleInitial: string;
@@ -55,6 +56,15 @@ type PaginationMeta = {
   totalPages: number;
   hasNext: boolean;
   hasPrevious: boolean;
+};
+
+type DuplicateStatus = 'red' | 'orange' | 'yellow' | 'green';
+
+const DUPLICATE_ROW_CLASS: Record<DuplicateStatus, string> = {
+  red: 'bg-[#ffe9e9] hover:bg-[#ffdede]',
+  orange: 'bg-[#fff2e3] hover:bg-[#ffe8d0]',
+  yellow: 'bg-[#fff9df] hover:bg-[#fff2c7]',
+  green: 'bg-[#eef7f1] hover:bg-[#e2f0e8]'
 };
 
 const LIST_API = apiUrl('/api/manage/registrations/');
@@ -328,12 +338,10 @@ export function ManagePage() {
 
                 <tbody>
                   {rows.length > 0 ? (
-                    rows.map((reg, index) => (
+                    rows.map((reg) => (
                       <tr
                         key={reg.id}
-                        className={`border-b border-[#d8e6dc] text-[#244c3a] transition-colors duration-150 ${
-                          index % 2 === 0 ? 'bg-[#fbfdfb]' : 'bg-[#f3f8f4]'
-                        } hover:bg-[#eaf3ed]`}
+                        className={`border-b border-[#d8e6dc] text-[#244c3a] transition-colors duration-150 ${DUPLICATE_ROW_CLASS[reg.duplicateStatus || 'green']}`}
                       >
                         <td className="px-3 py-2.5 font-mono text-xs sm:px-5 sm:py-3 md:text-sm">{reg.reference}</td>
                         <td className="px-3 py-2.5 sm:px-5 sm:py-3">
