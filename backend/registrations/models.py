@@ -25,6 +25,8 @@ class EventRegistration(models.Model):
 	will_come = models.BooleanField(default=True)
 	attendee_count = models.PositiveIntegerField(default=1)
 	additional_attendees = models.JSONField(default=list, blank=True)
+	duplicate_score = models.PositiveSmallIntegerField(default=0)
+	duplicate_status = models.CharField(max_length=10, default='green')
 	data_privacy_consent = models.BooleanField(default=False)
 	created_at = models.DateTimeField(auto_now_add=True)
 
