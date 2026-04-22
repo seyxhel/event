@@ -28,6 +28,8 @@ type PaginationMeta = {
 
 const LIST_API = apiUrl('/api/manage/feedback/');
 const XLSX_EXPORT_URL = apiUrl('/api/manage/export/feedback-xlsx/?theme=mint');
+const XLSX_EXPORT_PIN = '05142021';
+const XLSX_EXPORT_PIN_LENGTH = 8;
 
 const SATISFACTION_LABELS: Record<string, string> = {
   '1': 'Very Dissatisfied',
@@ -77,6 +79,9 @@ export function ManagePage() {
   const [rows, setRows] = useState<FeedbackRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [exportPin, setExportPin] = useState('');
+  const [exportPinError, setExportPinError] = useState('');
+  const [isExportPinOpen, setIsExportPinOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchDraft, setSearchDraft] = useState('');
   const [page, setPage] = useState(1);
@@ -100,6 +105,36 @@ export function ManagePage() {
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
+
+  useEffect(() => {
+    if (!isExportPinOpen) {
+      return;
+    }
+
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeExportPin();
+        return;
+      }
+
+      if (!/^\d$/.test(event.key) && event.key !== 'Backspace' && event.key !== 'Delete') {
+        return;
+      }
+
+      if (event.key === 'Backspace' || event.key === 'Delete') {
+        event.preventDefault();
+        removeLastExportDigit();
+        return;
+      }
+
+      event.preventDefault();
+      appendExportDigit(event.key);
+    };
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => window.removeEventListener('keydown', handleKeydown);
+  }, [isExportPinOpen, exportPin]);
 
   useEffect(() => {
     const load = async () => {
@@ -183,6 +218,54 @@ export function ManagePage() {
     setPageSize(value);
   };
 
+  const closeExportPin = () => {
+    setIsExportPinOpen(false);
+    setExportPin('');
+    setExportPinError('');
+  };
+
+  const validateExportPin = (candidate: string) => {
+    if (candidate.length !== XLSX_EXPORT_PIN_LENGTH) {
+      return;
+    }
+
+    if (candidate === XLSX_EXPORT_PIN) {
+      closeExportPin();
+      window.location.assign(XLSX_EXPORT_URL);
+      return;
+    }
+
+    setExportPinError('Incorrect PIN. Please try again.');
+    setExportPin('');
+  };
+
+  const appendExportDigit = (digit: string) => {
+    if (exportPin.length >= XLSX_EXPORT_PIN_LENGTH) {
+      return;
+    }
+
+    const nextPin = `${exportPin}${digit}`;
+    setExportPin(nextPin);
+    setExportPinError('');
+    validateExportPin(nextPin);
+  };
+
+  const clearExportPin = () => {
+    setExportPin('');
+    setExportPinError('');
+  };
+
+  const removeLastExportDigit = () => {
+    setExportPin((current) => current.slice(0, -1));
+    setExportPinError('');
+  };
+
+  const handleExportClick = () => {
+    setIsExportPinOpen(true);
+    setExportPin('');
+    setExportPinError('');
+  };
+
   return (
     <div className="min-h-screen px-3 pb-14 pt-6 sm:px-6 sm:pb-16 sm:pt-8 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -199,13 +282,14 @@ export function ManagePage() {
             </div>
 
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row print:hidden">
-              <a
-                href={XLSX_EXPORT_URL}
+              <button
+                type="button"
+                onClick={handleExportClick}
                 className="secondary-btn inline-flex items-center justify-center gap-2 px-4 py-2 text-xs sm:text-sm"
               >
                 <Download className="h-4 w-4" />
                 Export XLSX
-              </a>
+              </button>
             </div>
           </div>
         </header>
@@ -418,6 +502,65 @@ export function ManagePage() {
                 itemLabels={SESSION_ITEM_LABELS}
                 valueLabels={SESSION_LABELS}
               />
+            </div>
+          </section>
+        </div>
+      )}
+
+      {isExportPinOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-[#1d3f30]/35 p-3 sm:p-4 backdrop-blur-[2px]"
+          onClick={closeExportPin}
+        >
+          <section className="glass-panel w-full max-w-sm p-6 sm:p-7" onClick={(e) => e.stopPropagation()}>
+            <p className="meta-badge inline-flex">Restricted Area</p>
+            <h2 className="display-font mt-3 text-3xl text-[#1f4736]">Export Access</h2>
+            <p className="mt-2 text-sm text-[#5f7568]">Enter the 8-digit PIN to export the XLSX file.</p>
+
+            <div className="mt-5 grid grid-cols-4 gap-2" aria-label="Export PIN digits">
+              {Array.from({ length: XLSX_EXPORT_PIN_LENGTH }).map((_, index) => (
+                <div
+                  key={index}
+                  className={`flex h-11 items-center justify-center rounded-lg border text-xl font-semibold ${
+                    index < exportPin.length
+                      ? 'border-[#3f8657] bg-[#e9f5ea] text-[#1f4736]'
+                      : 'border-[#bfd3c5] bg-[#f8fbf9] text-[#8ca093]'
+                  }`}
+                >
+                  {index < exportPin.length ? '•' : ''}
+                </div>
+              ))}
+            </div>
+
+            {exportPinError && <p className="mt-3 text-sm text-[#b64a4a]">{exportPinError}</p>}
+
+            <div className="mt-5 grid grid-cols-3 gap-2.5">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
+                <button
+                  key={digit}
+                  type="button"
+                  onClick={() => appendExportDigit(digit)}
+                  className="secondary-btn py-3 text-lg"
+                  disabled={exportPin.length >= XLSX_EXPORT_PIN_LENGTH}
+                >
+                  {digit}
+                </button>
+              ))}
+
+              <button type="button" onClick={clearExportPin} className="secondary-btn py-3 text-sm">
+                Clear
+              </button>
+              <button
+                type="button"
+                onClick={() => appendExportDigit('0')}
+                className="secondary-btn py-3 text-lg"
+                disabled={exportPin.length >= XLSX_EXPORT_PIN_LENGTH}
+              >
+                0
+              </button>
+              <button type="button" onClick={removeLastExportDigit} className="secondary-btn py-3 text-sm">
+                Delete
+              </button>
             </div>
           </section>
         </div>
