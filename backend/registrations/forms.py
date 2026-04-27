@@ -158,9 +158,11 @@ class EventRegistrationForm(forms.ModelForm):
         return 1
 
     def clean_company_category(self):
-        category = (self.cleaned_data.get('company_category') or '').strip().lower()
-        if category not in {'government', 'private'}:
-            raise forms.ValidationError('Company category must be Government or Private.')
+        category = (self.cleaned_data.get('company_category') or '').strip()
+        if not category:
+            raise forms.ValidationError('Gender is required.')
+        if len(category) > 20:
+            raise forms.ValidationError('Gender value is too long.')
         return category
 
     def clean_industry_type(self):
