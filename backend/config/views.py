@@ -2,8 +2,13 @@ import mimetypes
 from pathlib import Path
 
 from django.conf import settings
-from django.http import FileResponse, HttpResponseNotFound
+from django.http import FileResponse, HttpResponseNotFound, JsonResponse
 from django.views.decorators.http import require_GET
+
+
+@require_GET
+def health_check(request):
+    return JsonResponse({"status": "ok"})
 
 
 @require_GET
