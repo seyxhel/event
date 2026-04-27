@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   AlertCircle,
-  Building2,
   Check,
   Cpu,
   Mail,
@@ -18,83 +17,42 @@ import { EVENT_CONTACTS, EVENT_DETAILS } from '../eventDetails';
 
 const API_URL = apiUrl('/api/register/');
 
-const INDUSTRY_TYPE_OPTIONS = [
-  'Education',
-  'Healthcare',
-  'Retail',
-  'Finance',
-  'Constructions',
-  'E-Commerce',
-  'Others'
-] as const;
-
 interface FormData {
   privacyAccepted: boolean;
-  email: string;
   lastName: string;
   firstName: string;
   middleInitial: string;
-  designation: string;
+  email: string;
   mobileNo: string;
-  viberNo: string;
-  gcashNo: string;
-  linkedinAccount: string;
-  facebookAccount: string;
-  messengerAccount: string;
-  companyName: string;
-  companyCategory: string;
-  industryType: string;
-  otherIndustryType: string;
-  companyAddress: string;
-  companyLandline: string;
-  companyEmail: string;
-  bringCompanyId: boolean;
-  hasVehicle: boolean;
-  vehicleType: string;
-  otherVehicleType: string;
+  gender: string;
+  schoolUniversity: string;
+  course: string;
+  yearLevel: string;
 }
 
 const initialFormData: FormData = {
   privacyAccepted: false,
-  email: '',
   lastName: '',
   firstName: '',
   middleInitial: '',
-  designation: '',
+  email: '',
   mobileNo: '',
-  viberNo: '',
-  gcashNo: '',
-  linkedinAccount: '',
-  facebookAccount: '',
-  messengerAccount: '',
-  companyName: '',
-  companyCategory: '',
-  industryType: '',
-  otherIndustryType: '',
-  companyAddress: '',
-  companyLandline: '',
-  companyEmail: '',
-  bringCompanyId: false,
-  hasVehicle: false,
-  vehicleType: '',
-  otherVehicleType: ''
+  gender: '',
+  schoolUniversity: '',
+  course: '',
+  yearLevel: ''
 };
 
 const REQUIRED_FIELD_CHECKS: Array<(data: FormData) => boolean> = [
   (data) => data.privacyAccepted,
-  (data) => data.email.trim().length > 0,
   (data) => data.lastName.trim().length > 0,
   (data) => data.firstName.trim().length > 0,
-  (data) => data.designation.trim().length > 0,
+  (data) => data.email.trim().length > 0,
   (data) => data.mobileNo.trim().length > 0,
-  (data) => data.gcashNo.trim().length > 0,
-  (data) => data.companyName.trim().length > 0,
-  (data) => data.companyCategory.trim().length > 0,
-  (data) => data.industryType.trim().length > 0,
-  (data) => (data.industryType === 'Others' ? data.otherIndustryType.trim().length > 0 : true),
-  (data) => data.companyLandline.trim().length > 0,
-  (data) => data.companyAddress.trim().length > 0,
-  (data) => data.companyEmail.trim().length > 0
+  (data) => data.gender.trim().length > 0,
+  (data) => data.schoolUniversity.trim().length > 0,
+  (data) => data.course.trim().length > 0,
+  (data) => data.yearLevel.trim().length > 0
 ];
 
 const HERO_HIGHLIGHTS: Array<{
@@ -157,49 +115,24 @@ export function RegistrationPage() {
     if (name === 'middleInitial') {
       nextValue = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 1);
     }
-    if (name === 'mobileNo' || name === 'gcashNo') {
+    if (name === 'mobileNo') {
       nextValue = value.replace(/\D/g, '').slice(0, 11);
     }
 
     setFormData((prev) => {
-      const newData = {
+      return {
         ...prev,
         [name]:
-          name === 'hasVehicle'
-            ? value === 'yes'
-            : type === 'checkbox'
-              ? checked
-              : type === 'number'
-                ? Number(value)
-                : nextValue
+          type === 'checkbox'
+            ? checked
+            : type === 'number'
+              ? Number(value)
+              : nextValue
       } as FormData;
-      if (name === 'hasVehicle' && value === 'no') {
-        newData.vehicleType = '';
-        newData.otherVehicleType = '';
-      }
-      if (name === 'vehicleType' && value !== 'Other') {
-        newData.otherVehicleType = '';
-      }
-      if (name === 'industryType' && value !== 'Others') {
-        newData.otherIndustryType = '';
-      }
-      return newData;
     });
 
     if (errors[name as keyof FormData]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
-    if (name === 'hasVehicle' && value === 'no' && errors.vehicleType) {
-      setErrors((prev) => ({ ...prev, vehicleType: undefined }));
-    }
-    if (name === 'hasVehicle' && value === 'no' && errors.otherVehicleType) {
-      setErrors((prev) => ({ ...prev, otherVehicleType: undefined }));
-    }
-    if (name === 'vehicleType' && value !== 'Other' && errors.otherVehicleType) {
-      setErrors((prev) => ({ ...prev, otherVehicleType: undefined }));
-    }
-    if (name === 'industryType' && value !== 'Others' && errors.otherIndustryType) {
-      setErrors((prev) => ({ ...prev, otherIndustryType: undefined }));
     }
   };
 
@@ -214,44 +147,16 @@ export function RegistrationPage() {
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
-    if (!formData.lastName) newErrors.lastName = 'Last Name is required';
-    if (!formData.firstName) newErrors.firstName = 'First Name is required';
-    if (!formData.designation) newErrors.designation = 'Designation / Job Title is required';
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last Name is required';
+    if (!formData.firstName.trim()) newErrors.firstName = 'First Name is required';
     if (!formData.mobileNo) newErrors.mobileNo = 'Mobile No. is required';
     else if (!/^\d{11}$/.test(formData.mobileNo)) {
       newErrors.mobileNo = 'Mobile No. must be exactly 11 digits';
     }
-    if (!formData.gcashNo) newErrors.gcashNo = 'GCash No. is required';
-    else if (!/^\d{11}$/.test(formData.gcashNo)) {
-      newErrors.gcashNo = 'GCash No. must be exactly 11 digits';
-    }
-    if (!formData.companyName) newErrors.companyName = 'Company Name is required';
-    if (!formData.companyCategory) {
-      newErrors.companyCategory = 'Please select whether your company is Public Sector or Private Sector';
-    } else if (!['government', 'private'].includes(formData.companyCategory)) {
-      newErrors.companyCategory = 'Company category must be Public Sector or Private Sector';
-    }
-    if (!formData.industryType) {
-      newErrors.industryType = 'Industry Type is required';
-    } else if (!INDUSTRY_TYPE_OPTIONS.includes(formData.industryType as (typeof INDUSTRY_TYPE_OPTIONS)[number])) {
-      newErrors.industryType = 'Please select a valid industry type';
-    }
-    if (formData.industryType === 'Others' && !formData.otherIndustryType.trim()) {
-      newErrors.otherIndustryType = 'Please specify your industry type';
-    }
-    if (!formData.companyLandline) newErrors.companyLandline = 'Company Landline No. is required';
-    if (!formData.companyAddress) newErrors.companyAddress = 'Company Office Address is required';
-    if (!formData.companyEmail) {
-      newErrors.companyEmail = 'Company Email Address is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.companyEmail)) {
-      newErrors.companyEmail = 'Invalid email format';
-    }
-    if (formData.hasVehicle && !formData.vehicleType.trim()) {
-      newErrors.vehicleType = 'Please select the type of vehicle you will bring';
-    }
-    if (formData.hasVehicle && formData.vehicleType === 'Other' && !formData.otherVehicleType.trim()) {
-      newErrors.otherVehicleType = 'Please specify your vehicle type';
-    }
+    if (!formData.gender.trim()) newErrors.gender = 'Gender is required';
+    if (!formData.schoolUniversity.trim()) newErrors.schoolUniversity = 'School / University is required';
+    if (!formData.course.trim()) newErrors.course = 'Course is required';
+    if (!formData.yearLevel.trim()) newErrors.yearLevel = 'Year level is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -261,25 +166,18 @@ export function RegistrationPage() {
     const fieldMap: Record<string, keyof FormData> = {
       data_privacy_consent: 'privacyAccepted',
       email: 'email',
-      last_name: 'lastName',
       first_name: 'firstName',
+      last_name: 'lastName',
       middle_initial: 'middleInitial',
-      designation: 'designation',
+      designation: 'yearLevel',
       mobile_cp_no: 'mobileNo',
-      viber_no: 'viberNo',
-      gcash_no: 'gcashNo',
-      personal_email_address: 'email',
-      linkedin_account: 'linkedinAccount',
-      facebook_account: 'facebookAccount',
-      messenger_account: 'messengerAccount',
-      company_name: 'companyName',
-      company_category: 'companyCategory',
-      industry_type: 'industryType',
-      company_office_address: 'companyAddress',
-      company_landline_no: 'companyLandline',
-      company_email_address: 'companyEmail',
-      company_id_to_bring: 'bringCompanyId',
-      vehicle_type: 'vehicleType'
+      company_category: 'gender',
+      company_name: 'schoolUniversity',
+      industry_type: 'course',
+      year_level: 'yearLevel',
+      company_office_address: 'schoolUniversity',
+      company_landline_no: 'yearLevel',
+      company_email_address: 'email'
     };
 
     const mapped: Partial<Record<keyof FormData, string>> = {};
@@ -303,32 +201,17 @@ export function RegistrationPage() {
     setSubmitError('');
 
     try {
-      const {
-        hasVehicle,
-        otherVehicleType,
-        otherIndustryType,
-        ...submissionData
-      } = formData;
       const payload = {
-        ...submissionData,
-        industryType:
-          formData.industryType === 'Others'
-            ? otherIndustryType.trim()
-            : formData.industryType,
-        personalEmail: formData.email.trim(),
-        linkedinAccount: formData.linkedinAccount.trim(),
-        facebookAccount: formData.facebookAccount.trim(),
-        messengerAccount: formData.messengerAccount.trim(),
-        companyCategory: formData.companyCategory,
-        vehicleType: hasVehicle
-          ? formData.vehicleType === 'Other'
-            ? otherVehicleType.trim()
-            : formData.vehicleType.trim()
-          : '',
-        willCome: true,
-        companyIdToBring: formData.bringCompanyId,
-        attendeeCount: 1,
-        attendeeDetails: []
+        privacyAccepted: formData.privacyAccepted,
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        middleInitial: formData.middleInitial,
+        email: formData.email.trim(),
+        mobileNo: formData.mobileNo.trim(),
+        gender: formData.gender,
+        schoolUniversity: formData.schoolUniversity.trim(),
+        course: formData.course.trim(),
+        yearLevel: formData.yearLevel.trim()
       };
 
       const response = await fetch(API_URL, {
@@ -606,16 +489,6 @@ export function RegistrationPage() {
             <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2">
               <SectionTitle title="Attendee Details" icon={Users} />
               <FormField
-                label="Email Address"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                error={errors.email}
-                required
-                className="md:col-span-2"
-              />
-              <FormField
                 label="Last Name"
                 name="lastName"
                 value={formData.lastName}
@@ -636,166 +509,88 @@ export function RegistrationPage() {
                 name="middleInitial"
                 value={formData.middleInitial}
                 onChange={handleChange}
+                error={errors.middleInitial}
                 maxLength={1}
               />
               <FormField
-                label="Designation / Job Title"
-                name="designation"
-                value={formData.designation}
+                label="Email Address"
+                name="email"
+                type="email"
+                value={formData.email}
                 onChange={handleChange}
-                error={errors.designation}
+                error={errors.email}
                 required
+                className="md:col-span-2"
               />
 
               <SectionTitle title="Contact Details" icon={Phone} className="mt-2" />
               <FormField
-                label="Mobile / Cellphone No."
+                label="Contact No."
                 name="mobileNo"
                 value={formData.mobileNo}
                 onChange={handleChange}
                 error={errors.mobileNo}
                 maxLength={11}
                 required
-              />
-              <FormField
-                label="Viber No."
-                name="viberNo"
-                value={formData.viberNo}
-                onChange={handleChange}
-              />
-              <FormField
-                label="GCash No. (for raffle)"
-                name="gcashNo"
-                value={formData.gcashNo}
-                onChange={handleChange}
-                error={errors.gcashNo}
-                maxLength={11}
-                required
-              />
-              <FormField
-                label="LinkedIn Account"
-                name="linkedinAccount"
-                value={formData.linkedinAccount}
-                onChange={handleChange}
                 className="md:col-span-2"
               />
-              <FormField
-                label="Facebook Account"
-                name="facebookAccount"
-                value={formData.facebookAccount}
-                onChange={handleChange}
-                className="md:col-span-2"
-              />
-              <FormField
-                label="Messenger Account"
-                name="messengerAccount"
-                value={formData.messengerAccount}
-                onChange={handleChange}
-                className="md:col-span-2"
-              />
-
-              <SectionTitle title="Company Details" icon={Building2} className="mt-2" />
-              <div className="glass-panel-soft md:col-span-2 grid gap-3 p-3.5 sm:p-4">
-                <p className="text-sm text-[#335f49] md:text-base">
-                  Company Category <span className="text-[#c05b5b]">*</span>
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
-                    <input
-                      type="radio"
-                      name="companyCategory"
-                      value="government"
-                      checked={formData.companyCategory === 'government'}
-                      onChange={handleChange}
-                      className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
-                    />
-                    Public Sector
-                  </label>
-
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-[#b8d0c0] bg-[#f7fcf8] px-3 py-2 text-sm text-[#335f49] md:text-base">
-                    <input
-                      type="radio"
-                      name="companyCategory"
-                      value="private"
-                      checked={formData.companyCategory === 'private'}
-                      onChange={handleChange}
-                      className="h-4 w-4 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
-                    />
-                    Private Sector
-                  </label>
-                </div>
-
-                {errors.companyCategory && (
-                  <span className="text-xs text-[#b64a4a]">{errors.companyCategory}</span>
-                )}
-              </div>
-
-              <FormField
-                label="Company Name"
-                name="companyName"
-                value={formData.companyName}
-                onChange={handleChange}
-                error={errors.companyName}
-                required
-                className="md:col-span-2"
-              />
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="industryType" className="form-label flex items-center gap-1">
-                  Industry Type
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label htmlFor="gender" className="form-label flex items-center gap-1">
+                  Gender
                   <span className="text-[#c05b5b]">*</span>
                 </label>
                 <select
-                  id="industryType"
-                  name="industryType"
-                  value={formData.industryType}
+                  id="gender"
+                  name="gender"
+                  value={formData.gender}
                   onChange={handleChange}
-                  className={`form-input form-select-themed ${errors.industryType ? 'form-input-error' : ''}`}
+                  className={`form-input form-select-themed ${errors.gender ? 'form-input-error' : ''}`}
                 >
-                  <option value="">Select Industry Type</option>
-                  {INDUSTRY_TYPE_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
                 </select>
-                {errors.industryType && <span className="text-xs text-[#b64a4a]">{errors.industryType}</span>}
+                {errors.gender && <span className="text-xs text-[#b64a4a]">{errors.gender}</span>}
               </div>
-              {formData.industryType === 'Others' && (
-                <FormField
-                  label="Please specify"
-                  name="otherIndustryType"
-                  value={formData.otherIndustryType}
+
+              <SectionTitle title="School Details" icon={Cpu} className="mt-2" />
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="yearLevel" className="form-label flex items-center gap-1">
+                  Year Level
+                  <span className="text-[#c05b5b]">*</span>
+                </label>
+                <select
+                  id="yearLevel"
+                  name="yearLevel"
+                  value={formData.yearLevel}
                   onChange={handleChange}
-                  error={errors.otherIndustryType}
-                  required
-                />
-              )}
+                  className={`form-input form-select-themed ${errors.yearLevel ? 'form-input-error' : ''}`}
+                >
+                  <option value="">Select Year Level</option>
+                  <option value="1st Year">1st Year</option>
+                  <option value="2nd Year">2nd Year</option>
+                  <option value="3rd Year">3rd Year</option>
+                  <option value="4th Year">4th Year</option>
+                  <option value="5th Year+">5th Year+</option>
+                </select>
+                {errors.yearLevel && <span className="text-xs text-[#b64a4a]">{errors.yearLevel}</span>}
+              </div>
               <FormField
-                label="Company Landline No."
-                name="companyLandline"
-                value={formData.companyLandline}
+                label="School / University"
+                name="schoolUniversity"
+                value={formData.schoolUniversity}
                 onChange={handleChange}
-                error={errors.companyLandline}
+                error={errors.schoolUniversity}
                 required
               />
               <FormField
-                label="Company Office Address"
-                name="companyAddress"
-                value={formData.companyAddress}
+                label="Course"
+                name="course"
+                value={formData.course}
                 onChange={handleChange}
-                error={errors.companyAddress}
+                error={errors.course}
                 required
-                className="md:col-span-2"
-              />
-              <FormField
-                label="Company Email Address"
-                name="companyEmail"
-                type="email"
-                value={formData.companyEmail}
-                onChange={handleChange}
-                error={errors.companyEmail}
-                required
-                className="md:col-span-2"
               />
 
             </div>

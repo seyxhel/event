@@ -221,10 +221,12 @@ def _format_reference(registration: EventRegistration) -> str:
 
 
 def _serialize_registration(registration: EventRegistration):
+	full_name = ' '.join(part for part in [registration.first_name, registration.last_name] if part and part != '-').strip()
 	return {
 		'id': registration.id,
 		'reference': _format_reference(registration),
 		'refNumber': _format_reference(registration),
+		'name': full_name,
 		'privacyAccepted': registration.data_privacy_consent,
 		'email': registration.email,
 		'lastName': registration.last_name,
@@ -246,6 +248,10 @@ def _serialize_registration(registration: EventRegistration):
 		'companyEmail': registration.company_email_address,
 		'companyIdToBring': registration.company_id_to_bring,
 		'bringCompanyId': registration.company_id_to_bring,
+		'gender': registration.company_category,
+		'schoolUniversity': registration.company_name,
+		'course': registration.industry_type,
+		'yearLevel': registration.designation,
 		'vehicleType': registration.vehicle_type,
 		'willCome': registration.will_come,
 		'attendeeCount': registration.attendee_count,
@@ -269,26 +275,38 @@ def _parse_bool_flag(value):
 
 
 def _map_payload(payload):
+	full_name = (payload.get('name', '') or '').strip()
+	name_parts = full_name.split()
+	first_name = (payload.get('firstName', '') or '').strip() or (name_parts[0] if name_parts else '')
+	last_name = (payload.get('lastName', '') or '').strip() or (' '.join(name_parts[1:]) if len(name_parts) > 1 else '-')
+	middle_initial = (payload.get('middleInitial', '') or '').strip()
+	mobile_number = payload.get('mobileNo', '')
+	email = payload.get('email', '')
+	gender = (payload.get('gender', '') or '').strip()
+	school_university = (payload.get('schoolUniversity', '') or '').strip()
+	course = (payload.get('course', '') or '').strip()
+	year_level = (payload.get('yearLevel', '') or '').strip()
+
 	return {
 		'data_privacy_consent': payload.get('privacyAccepted'),
-		'email': payload.get('email', ''),
-		'last_name': payload.get('lastName', ''),
-		'first_name': payload.get('firstName', ''),
-		'middle_initial': payload.get('middleInitial', ''),
-		'designation': payload.get('designation', ''),
-		'mobile_cp_no': payload.get('mobileNo', ''),
+		'email': email,
+		'last_name': last_name,
+		'first_name': first_name,
+		'middle_initial': middle_initial,
+		'designation': year_level,
+		'mobile_cp_no': mobile_number,
 		'viber_no': payload.get('viberNo', ''),
-		'gcash_no': payload.get('gcashNo', ''),
-		'personal_email_address': payload.get('personalEmail') or payload.get('email', ''),
+		'gcash_no': payload.get('gcashNo') or mobile_number,
+		'personal_email_address': payload.get('personalEmail') or email,
 		'linkedin_account': payload.get('linkedinAccount', ''),
 		'facebook_account': payload.get('facebookAccount', ''),
 		'messenger_account': payload.get('messengerAccount', ''),
-		'company_name': payload.get('companyName', ''),
-		'company_category': payload.get('companyCategory', ''),
-		'industry_type': payload.get('industryType', ''),
-		'company_office_address': payload.get('companyAddress', ''),
-		'company_landline_no': payload.get('companyLandline', ''),
-		'company_email_address': payload.get('companyEmail', ''),
+		'company_name': payload.get('companyName') or school_university,
+		'company_category': payload.get('companyCategory') or gender,
+		'industry_type': payload.get('industryType') or course,
+		'company_office_address': payload.get('companyAddress') or 'N/A',
+		'company_landline_no': payload.get('companyLandline') or 'N/A',
+		'company_email_address': payload.get('companyEmail') or email,
 		'company_id_to_bring': payload.get('companyIdToBring'),
 		'vehicle_type': payload.get('vehicleType', ''),
 		'will_come': True,
