@@ -38,12 +38,13 @@ RUN set -eux; \
 			mkdir -p /app/frontend_dist && cp -R /artifacts/frontend_dist/. /app/frontend_dist/; \
 		fi
 
-# Note: Database migrations are NOT run on container startup to allow the app to
-# serve the health check endpoint (/api/health/) even if the database is unavailable.
-# On Railway, run migrations separately via:
-#   - Manual job: railway run python backend/manage.py migrate
-#   - Or configure a scheduled Job service to run on each deploy
+# Copy entrypoint script for backend services
+COPY backend/docker-entrypoint.sh /app/docker-entrypoint.sh 2>/dev/null || true
+RUN if [ -f /app/docker-entrypoint.sh ]; then chmod +x /app/docker-entrypoint.sh; fi
+
+# Note: Migrations are attempted on startup but will not block the application.
+# If using Railway, you can also run: railway run python manage.py migrate
 
 EXPOSE 8000 8080
 
-CMD ["sh", "-c", "if [ -f /app/backend/manage.py ]; then cd /app/backend && python manage.py collectstatic --noinput 2>/dev/null || true && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3; elif [ -d /app/frontend_dist ]; then python -c 'import http.server, os, pathlib, socketserver; root = pathlib.Path(\"/app/frontend_dist\");\nclass Handler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory=str(root), **kwargs)\n    def do_GET(self):\n        target = root / self.path.lstrip(\"/\")\n        if self.path == \"/\" or not target.exists() or target.is_dir():\n            self.path = \"/index.html\"\n        return super().do_GET()\nPORT = int(os.environ.get(\"PORT\", \"8080\"));\nwith socketserver.TCPServer((\"0.0.0.0\", PORT), Handler) as server:\n    server.serve_forever()'; else echo 'No runnable app found in build context' >&2; exit 1; fi"]
+CMD ["sh", "-c", "if [ -f /app/backend/manage.py ] && [ -f /app/docker-entrypoint.sh ]; then /app/docker-entrypoint.sh; elif [ -f /app/backend/manage.py ]; then cd /app/backend && python manage.py collectstatic --noinput 2>/dev/null || true && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3; elif [ -d /app/frontend_dist ]; then python -c 'import http.server, os, pathlib, socketserver; root = pathlib.Path(\"/app/frontend_dist\");\nclass Handler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory=str(root), **kwargs)\n    def do_GET(self):\n        target = root / self.path.lstrip(\"/\")\n        if self.path == \"/\" or not target.exists() or target.is_dir():\n            self.path = \"/index.html\"\n        return super().do_GET()\nPORT = int(os.environ.get(\"PORT\", \"8080\"));\nwith socketserver.TCPServer((\"0.0.0.0\", PORT), Handler) as server:\n    server.serve_forever()'; else echo 'No runnable app found in build context' >&2; exit 1; fi"]

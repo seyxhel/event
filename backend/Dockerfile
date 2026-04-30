@@ -10,12 +10,10 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY . /app
 
-# Note: Database migrations are NOT run on container startup to allow the app to
-# serve the health check endpoint (/api/health/) even if the database is unavailable.
-# On Railway, run migrations separately via:
-#   - Manual job: railway run python manage.py migrate
-#   - Or configure a scheduled Job service to run on each deploy
+# Copy and make the entrypoint script executable
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py collectstatic --noinput 2>/dev/null || true && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 3"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
