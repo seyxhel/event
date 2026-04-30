@@ -1,9 +1,6 @@
 import os
 from pathlib import Path
 
-import dj_database_url
-from django.db import OperationalError, connections
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Prefer bundled frontend build inside backend image, then local frontend dist in dev.
@@ -67,27 +64,14 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-database_url = os.getenv("DATABASE_URL", "").strip()
-if database_url:
-    DATABASES = {
-        "default": dj_database_url.parse(database_url, conn_max_age=600, ssl_require=False)
+# Railway PostgreSQL credentials are currently failing in deployment.
+# Use SQLite so the app can keep accepting submissions and serving data.
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
-    try:
-        connections["default"].ensure_connection()
-    except OperationalError:
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": BASE_DIR / "db.sqlite3",
-            }
-        }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
