@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from django.db import OperationalError, connections
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -71,6 +72,15 @@ if database_url:
     DATABASES = {
         "default": dj_database_url.parse(database_url, conn_max_age=600, ssl_require=False)
     }
+    try:
+        connections["default"].ensure_connection()
+    except OperationalError:
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 else:
     DATABASES = {
         "default": {
