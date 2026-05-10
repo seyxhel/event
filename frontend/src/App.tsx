@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { FeedbackPage } from './pages/RegistrationPage';
 import { SuccessPage } from './pages/SuccessPage';
+import { RafflePage } from './pages/RafflePage'
 import { ManagePage } from './pages/ManagePage';
 
 const MANAGE_PIN = '482917';
@@ -142,9 +143,9 @@ export function App() {
             <Route path="/" element={<FeedbackPage />} />
             <Route path="/success" element={<SuccessPage />} />
             <Route path="/manage" element={<ManagePinGate />} />
+            <Route path="/raffle" element={<RafflePage />} />
           </Routes>
         </main>
-
         <footer className="relative z-10 border-t border-[#c9dbcf]/85 bg-[#ffffff]/90 py-4 text-center text-xs tracking-wide text-[#5f7568] backdrop-blur">
           Copyright © Maptech Information Solutions Inc. All Rights Reserved.
         </footer>

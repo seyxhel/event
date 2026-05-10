@@ -48,6 +48,7 @@ XLSX_EXPORT_CONFIG = json.loads(
 		{"header": "Company Office Address", "key": "company_office_address", "width": 34},
 		{"header": "Company Landline No.", "key": "company_landline_no", "width": 18},
 		{"header": "Company Email", "key": "company_email_address", "width": 30},
+		{"header": "Attendance Mode", "key": "attendance_mode", "width": 18},
 		{"header": "Vehicle Type", "key": "vehicle_type", "width": 18},
 		{"header": "Submitted At", "key": "submitted_at", "width": 22}
 	  ],
@@ -89,6 +90,7 @@ FEEDBACK_XLSX_EXPORT_CONFIG = {
 	},
 	'columns': [
 		{'header': 'Reference', 'key': 'reference', 'width': 22},
+		{'header': 'Attendance Mode', 'key': 'attendance_mode', 'width': 18},
 		{'header': 'Personal & Company Info Consent', 'key': 'personal_company_info_consent', 'width': 30},
 		{'header': 'Event Satisfaction', 'key': 'event_satisfaction', 'width': 20},
 		{'header': 'Job Relevance', 'key': 'job_relevance', 'width': 18},
@@ -170,6 +172,7 @@ def _serialize_registration(registration: EventRegistration):
 		'bringCompanyId': registration.company_id_to_bring,
 		'vehicleType': registration.vehicle_type,
 		'willCome': registration.will_come,
+		'attendanceMode': registration.attendance_mode,
 		'attendeeCount': registration.attendee_count,
 		'attendeeDetails': registration.additional_attendees,
 		'createdAt': registration.created_at.isoformat(),
@@ -181,6 +184,7 @@ def _serialize_feedback(feedback: EventFeedback):
 	return {
 		'id': feedback.id,
 		'reference': _format_feedback_reference(feedback),
+		'attendanceMode': feedback.attendance_mode,
 		'personalCompanyInfoConsent': feedback.personal_company_info_consent,
 		'eventSatisfaction': feedback.event_satisfaction,
 		'jobRelevance': feedback.job_relevance,
@@ -229,6 +233,7 @@ def _map_payload(payload):
 		'company_id_to_bring': payload.get('companyIdToBring'),
 		'vehicle_type': payload.get('vehicleType', ''),
 		'will_come': True,
+		'attendance_mode': payload.get('attendanceMode') or payload.get('attendance_mode') or 'onsite',
 		'attendee_count': 1,
 		'additional_attendees': [],
 	}
@@ -237,6 +242,7 @@ def _map_payload(payload):
 def _map_feedback_payload(payload):
 	return {
 		'personal_company_info_consent': payload.get('personalCompanyInfoConsent'),
+		'attendance_mode': payload.get('attendanceMode') or payload.get('attendance_mode') or 'onsite',
 		'event_satisfaction': payload.get('eventSatisfaction'),
 		'job_relevance': payload.get('jobRelevance'),
 		'key_takeaways': payload.get('keyTakeaways', ''),
@@ -270,6 +276,7 @@ def _build_export_row(registration: EventRegistration):
 		'company_landline_no': registration.company_landline_no,
 		'company_email_address': registration.company_email_address,
 		'company_id_to_bring': 'Yes' if registration.company_id_to_bring else 'No',
+		'attendance_mode': 'Onsite' if registration.attendance_mode == 'onsite' else 'Via Online',
 		'vehicle_type': registration.vehicle_type,
 		'will_come': 'Yes' if registration.will_come else 'No',
 		'attendee_count': registration.attendee_count,
@@ -281,6 +288,7 @@ def _build_export_row(registration: EventRegistration):
 def _build_feedback_export_row(feedback: EventFeedback):
 	return {
 		'reference': _format_feedback_reference(feedback),
+		'attendance_mode': 'Onsite' if feedback.attendance_mode == 'onsite' else 'Via Online',
 		'personal_company_info_consent': 'Agree' if feedback.personal_company_info_consent else 'Do not agree',
 		'event_satisfaction': feedback.event_satisfaction,
 		'job_relevance': feedback.job_relevance,
@@ -357,6 +365,7 @@ def manage_registrations_api(request):
 			| Q(email__icontains=search_query)
 			| Q(company_name__icontains=search_query)
 			| Q(vehicle_type__icontains=search_query)
+			| Q(attendance_mode__icontains=search_query)
 		)
 
 	will_come_flag = _parse_bool_flag(request.GET.get('will_come'))

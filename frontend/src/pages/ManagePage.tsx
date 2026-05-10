@@ -5,6 +5,7 @@ import { apiUrl } from '../api';
 type FeedbackRow = {
   id: number;
   reference: string;
+  attendanceMode: string;
   personalCompanyInfoConsent: boolean | null;
   eventSatisfaction: number;
   jobRelevance: number;
@@ -38,6 +39,11 @@ const SATISFACTION_LABELS: Record<string, string> = {
   '4': 'Satisfied',
   '5': 'Very Satisfied',
   na: 'N/A',
+};
+
+const ATTENDANCE_LABELS: Record<string, string> = {
+  onsite: 'Onsite',
+  via_online: 'Via Online',
 };
 
 const SESSION_LABELS: Record<string, string> = {
@@ -345,6 +351,7 @@ export function ManagePage() {
                 <thead>
                   <tr className="border-b border-[#c8dbcf] bg-[#f1f7f2] text-[0.68rem] uppercase tracking-[0.08em] text-[#456253] sm:text-[0.72rem]">
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Ref #</th>
+                    <th className="px-3 py-2.5 sm:px-5 sm:py-3">Attendance</th>
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Event Satisfaction</th>
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Job Relevance</th>
                     <th className="px-3 py-2.5 sm:px-5 sm:py-3">Logistics Feedback</th>
@@ -364,6 +371,9 @@ export function ManagePage() {
                       >
                         <td className="px-3 py-2.5 font-mono text-xs sm:px-5 sm:py-3 md:text-sm">
                           {feedback.reference}
+                        </td>
+                        <td className="px-3 py-2.5 sm:px-5 sm:py-3">
+                          <p className="font-semibold text-[#1f4736]">{ATTENDANCE_LABELS[feedback.attendanceMode] || feedback.attendanceMode || '-'}</p>
                         </td>
                         <td className="px-3 py-2.5 sm:px-5 sm:py-3">
                           <p className="font-semibold text-[#1f4736]">{feedback.eventSatisfaction} / 5</p>
@@ -395,7 +405,7 @@ export function ManagePage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={6} className="px-3 py-8 text-center text-[#5f7568] sm:px-5 sm:py-10">
+                      <td colSpan={7} className="px-3 py-8 text-center text-[#5f7568] sm:px-5 sm:py-10">
                         No feedback found.
                       </td>
                     </tr>
@@ -458,6 +468,7 @@ export function ManagePage() {
             <div className="grid grid-cols-1 gap-3 p-4 text-xs sm:gap-4 sm:p-5 sm:text-sm md:grid-cols-2 md:text-base">
               <Detail label="Reference" value={selected.reference} />
               <Detail label="Submitted" value={new Date(selected.createdAt).toLocaleString()} />
+              <Detail label="Attendance" value={ATTENDANCE_LABELS[selected.attendanceMode] || selected.attendanceMode || '-'} />
               <Detail
                 label="Personal & Company Info Consent"
                 value={

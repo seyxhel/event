@@ -44,6 +44,7 @@ class EventRegistrationForm(forms.ModelForm):
         'middle_initial',
         'viber_no',
         'vehicle_type',
+        'will_come',
         'additional_attendees',
         'linkedin_account',
         'facebook_account',
@@ -75,6 +76,7 @@ class EventRegistrationForm(forms.ModelForm):
             'company_id_to_bring',
             'vehicle_type',
             'will_come',
+            'attendance_mode',
             'attendee_count',
             'additional_attendees',
         ]
@@ -112,7 +114,8 @@ class EventRegistrationForm(forms.ModelForm):
             'company_email_address': forms.EmailInput(attrs={'class': 'input-field'}),
             'company_id_to_bring': forms.CheckboxInput(attrs={'class': 'checkbox-input'}),
             'vehicle_type': forms.TextInput(attrs={'class': 'input-field'}),
-            'will_come': forms.CheckboxInput(attrs={'class': 'checkbox-input'}),
+            'will_come': forms.HiddenInput(),
+            'attendance_mode': forms.RadioSelect(attrs={'class': 'radio-input'}, choices=EventRegistration.ATTENDANCE_MODE_CHOICES),
             'attendee_count': forms.NumberInput(attrs={'class': 'input-field', 'min': '1'}),
             'additional_attendees': forms.HiddenInput(),
         }
@@ -139,6 +142,7 @@ class EventRegistrationForm(forms.ModelForm):
             'company_id_to_bring': 'I will bring my Company ID on event day.',
             'vehicle_type': 'Type of Vehicle to Bring',
             'will_come': 'I confirm I will attend the event.',
+            'attendance_mode': 'How will you attend the event?',
             'attendee_count': 'How many people will go',
             'additional_attendees': 'Additional attendees',
         }
@@ -217,6 +221,7 @@ class EventFeedbackForm(forms.ModelForm):
         model = EventFeedback
         fields = [
             'personal_company_info_consent',
+            'attendance_mode',
             'event_satisfaction',
             'job_relevance',
             'key_takeaways',
@@ -226,6 +231,9 @@ class EventFeedbackForm(forms.ModelForm):
             'session_comments',
             'overall_feedback',
         ]
+        widgets = {
+            'attendance_mode': forms.RadioSelect(attrs={'class': 'radio-input'}, choices=EventFeedback.ATTENDANCE_MODE_CHOICES),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -243,6 +251,12 @@ class EventFeedbackForm(forms.ModelForm):
         if consent is None:
             raise forms.ValidationError('Please select your consent option.')
         return consent
+
+    def clean_attendance_mode(self):
+        attendance_mode = (self.cleaned_data.get('attendance_mode') or '').strip().lower()
+        if attendance_mode not in {'onsite', 'via_online'}:
+            raise forms.ValidationError('Please select whether you attended onsite or via online.')
+        return attendance_mode
 
     def clean_job_relevance(self):
         job_relevance = self.cleaned_data.get('job_relevance')
