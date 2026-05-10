@@ -2,6 +2,11 @@ from django.db import models
 
 
 class EventRegistration(models.Model):
+	ATTENDANCE_MODE_CHOICES = (
+		('onsite', 'Onsite'),
+		('via_online', 'Via Online'),
+	)
+
 	email = models.EmailField()
 	last_name = models.CharField(max_length=100)
 	first_name = models.CharField(max_length=100)
@@ -23,6 +28,7 @@ class EventRegistration(models.Model):
 	company_id_to_bring = models.BooleanField(default=False)
 	vehicle_type = models.CharField(max_length=100, default='')
 	will_come = models.BooleanField(default=True)
+	attendance_mode = models.CharField(max_length=20, choices=ATTENDANCE_MODE_CHOICES, default='onsite')
 	attendee_count = models.PositiveIntegerField(default=1)
 	additional_attendees = models.JSONField(default=list, blank=True)
 	data_privacy_consent = models.BooleanField(default=False)
@@ -36,7 +42,13 @@ class EventRegistration(models.Model):
 
 
 class EventFeedback(models.Model):
+	ATTENDANCE_MODE_CHOICES = (
+		('onsite', 'Onsite'),
+		('via_online', 'Via Online'),
+	)
+
 	personal_company_info_consent = models.BooleanField(null=True, blank=True)
+	attendance_mode = models.CharField(max_length=20, choices=ATTENDANCE_MODE_CHOICES, default='onsite')
 	event_satisfaction = models.PositiveSmallIntegerField()
 	job_relevance = models.PositiveSmallIntegerField()
 	key_takeaways = models.TextField(default='', blank=True)

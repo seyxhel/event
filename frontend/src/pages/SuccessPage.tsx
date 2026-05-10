@@ -168,6 +168,23 @@ export function SuccessPage() {
             <h2 className="display-font text-xl text-[#1f4736] sm:text-2xl">{thankYouTitle}</h2>
             <p className="mt-2 text-sm text-[#325846] md:text-base">{thankYouMessage}</p>
             <p className="mt-2 text-sm text-[#4e6b5c] md:text-base">{thankYouNextStep}</p>
+
+            {state?.refNumber && (
+              <div className="mt-4 rounded-md border border-[#dfeee4] bg-white p-3 text-center">
+                <div className="text-sm text-[#325846]">Your reference number</div>
+                <div className="mt-2 inline-flex items-center gap-3 rounded-md bg-[#f7fff8] px-3 py-2">
+                  <div className="font-mono text-lg font-semibold text-[#1f4736]">{state.refNumber}</div>
+                  <button
+                    type="button"
+                    onClick={() => navigator.clipboard?.writeText(state.refNumber)}
+                    className="ml-2 rounded bg-[#3f8657] px-2 py-1 text-sm text-white"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="mt-3 text-xs text-[#6b7f73]">Please screenshot or copy this reference — keep it safe for raffle and follow-up.</p>
+              </div>
+            )}
           </article>
 
         </motion.section>

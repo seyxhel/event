@@ -64,9 +64,11 @@ type SessionKey = (typeof SESSION_ITEMS)[number]['key'];
 type SessionRating = (typeof SESSION_OPTIONS)[number]['value'] | '';
 type ScaleRating = '1' | '2' | '3' | '4' | '5' | '';
 type ConsentChoice = 'agree' | 'disagree' | '';
+type AttendanceModeChoice = 'onsite' | 'via_online' | '';
 
 interface FeedbackFormData {
   personalCompanyInfoConsent: ConsentChoice;
+  attendanceMode: AttendanceModeChoice;
   eventSatisfaction: ScaleRating;
   jobRelevance: ScaleRating;
   keyTakeaways: string;
@@ -79,6 +81,7 @@ interface FeedbackFormData {
 
 interface FeedbackErrors {
   personalCompanyInfoConsent?: string;
+  attendanceMode?: string;
   eventSatisfaction?: string;
   jobRelevance?: string;
   logisticsRatings?: string;
@@ -137,6 +140,7 @@ const createEmptySessionRatings = (): Record<SessionKey, SessionRating> => ({
 
 const initialFormData: FeedbackFormData = {
   personalCompanyInfoConsent: '',
+  attendanceMode: '',
   eventSatisfaction: '',
   jobRelevance: '',
   keyTakeaways: '',
@@ -212,6 +216,10 @@ export function FeedbackPage() {
       newErrors.personalCompanyInfoConsent = 'Please select your consent option.';
     }
 
+    if (!formData.attendanceMode) {
+      newErrors.attendanceMode = 'Please select whether you attended onsite or via online.';
+    }
+
     if (!formData.eventSatisfaction) {
       newErrors.eventSatisfaction = 'Please rate your overall satisfaction with the event.';
     }
@@ -235,6 +243,7 @@ export function FeedbackPage() {
   const mapServerErrors = (backendErrors: Record<string, string[]>) => {
     const fieldMap: Record<string, keyof FeedbackErrors> = {
       personal_company_info_consent: 'personalCompanyInfoConsent',
+      attendance_mode: 'attendanceMode',
       event_satisfaction: 'eventSatisfaction',
       job_relevance: 'jobRelevance',
       key_takeaways: 'keyTakeaways',
@@ -273,6 +282,7 @@ export function FeedbackPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           personalCompanyInfoConsent: formData.personalCompanyInfoConsent === 'agree',
+          attendanceMode: formData.attendanceMode,
           eventSatisfaction: Number(formData.eventSatisfaction),
           jobRelevance: Number(formData.jobRelevance),
           keyTakeaways: formData.keyTakeaways.trim(),
@@ -461,6 +471,59 @@ export function FeedbackPage() {
                 Please fill this quick survey and let us know your thoughts (your answers will be
                 anonymous).
               </p>
+            </article>
+
+            <article className="glass-panel-soft p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="display-font text-xl text-[#1f4736] sm:text-2xl">Attendance Mode</h3>
+                <span className="text-lg leading-none text-[#c05b5b]">*</span>
+              </div>
+              <p className="mt-2 text-sm text-[#4b6858] sm:text-base">
+                Tell us whether you joined the event onsite or via online so the admin team can track attendance for future raffle and follow-up records.
+              </p>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#d5e3da] bg-[#f7fcf8] p-4 transition-colors hover:bg-[#eef7f1]">
+                  <input
+                    type="radio"
+                    name="attendanceMode"
+                    value="onsite"
+                    checked={formData.attendanceMode === 'onsite'}
+                    onChange={handleInputChange}
+                    className="mt-1 h-5 w-5 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
+                  />
+                  <span>
+                    <span className="display-font block text-lg text-[#1f4736]">Onsite</span>
+                    <span className="mt-1 block text-sm text-[#4f6a5d]">
+                      I attended the event in person at the venue.
+                    </span>
+                  </span>
+                </label>
+
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[#d5e3da] bg-[#f7fcf8] p-4 transition-colors hover:bg-[#eef7f1]">
+                  <input
+                    type="radio"
+                    name="attendanceMode"
+                    value="via_online"
+                    checked={formData.attendanceMode === 'via_online'}
+                    onChange={handleInputChange}
+                    className="mt-1 h-5 w-5 border-[#9ebdae] accent-[#3f8657] focus:ring-[#3f8657]/45"
+                  />
+                  <span>
+                    <span className="display-font block text-lg text-[#1f4736]">Via Online</span>
+                    <span className="mt-1 block text-sm text-[#4f6a5d]">
+                      I attended remotely through the online event stream.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              {errors.attendanceMode && (
+                <p className="mt-3 flex items-center gap-1 text-xs text-[#b64a4a]">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {errors.attendanceMode}
+                </p>
+              )}
             </article>
 
             <SectionTitle title="Overall Event" icon={ClipboardList} />
